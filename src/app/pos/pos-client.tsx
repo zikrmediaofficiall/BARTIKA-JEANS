@@ -1,4 +1,379 @@
 "use client";
-import {useMemo,useState,useTransition} from "react";import {checkoutSale} from "@/app/actions";
-type Item={variant_id:string;product_name:string;sku:string;barcode:string;size:string|null;color:string|null;price:number;stock:number};
-export default function POSClient({catalog,maxDiscount}:{catalog:Item[];maxDiscount:number}){const [query,setQuery]=useState("");const [cart,setCart]=useState<{variant_id:string;name:string;price:number;qty:number;stock:number}[]>([]);const [discount,setDiscount]=useState(0);const [method,setMethod]=useState<"cash"|"instapay"|"visa">("cash");const [secondMethod,setSecondMethod]=useState<"cash"|"instapay"|"visa">("instapay");const [paid,setPaid]=useState("");const [secondPaid,setSecondPaid]=useState("");const [reference,setReference]=useState("");const [customer,setCustomer]=useState("");const [message,setMessage]=useState("");const [busy,start]=useTransition();const filtered=useMemo(()=>catalog.filter(p=>(p.product_name+" "+p.sku+" "+p.barcode+" "+(p.size||"")+" "+(p.color||"")).toLowerCase().includes(query.toLowerCase())).slice(0,16),[catalog,query]);const subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0);const total=Math.round(subtotal*(1-discount/100)*100)/100;const firstAmount=paid===""?(secondPaid?0:total):Number(paid);const paidValue=firstAmount+Number(secondPaid||0);function add(p:Item){setCart(old=>{const found=old.find(x=>x.variant_id===p.variant_id);if(found)return old.map(x=>x.variant_id===p.variant_id?{...x,qty:Math.min(x.stock,x.qty+1)}:x);return [...old,{variant_id:p.variant_id,name:p.product_name+" · "+[p.size,p.color].filter(Boolean).join(" / "),price:p.price,qty:1,stock:p.stock}]})}function finish(){setMessage("");if(!cart.length)return setMessage("أضف صنفًا أولًا");if(paidValue<total&&!customer.trim())return setMessage("أدخل رقم هاتف العميل عند وجود مبلغ متبقٍ");if(paidValue<=0||paidValue>total)return setMessage("راجع قيمة المبلغ المدفوع");start(async()=>{try{const result=await checkoutSale({idempotency_key:crypto.randomUUID(),items:cart.map(x=>({variant_id:x.variant_id,quantity:x.qty})),payments:[...(firstAmount>0?[{method,amount:firstAmount,reference}]:[]),...(Number(secondPaid)>0?[{method:secondMethod,amount:Number(secondPaid),reference}]:[])],discount_percent:discount,customer_phone:customer||undefined});setMessage("تم إنشاء الفاتورة رقم "+(result?.invoice_number||result?.id||""));setCart([]);setPaid("");setSecondPaid("");setCustomer("");setReference("")}catch(e){setMessage(e instanceof Error?e.message:"تعذر إتمام البيع")}})}return <main className="grid gap-5 xl:grid-cols-[1.4fr_1fr]"><section className="panel p-5"><h2 className="mb-4 text-xl font-black">الكاشير ونقطة البيع</h2><input className="field mb-4" placeholder="امسح الباركود أو ابحث باسم الصنف / SKU" value={query} onChange={e=>setQuery(e.target.value)} autoFocus/><div className="grid gap-2 sm:grid-cols-2">{filtered.map(p=><button key={p.variant_id} onClick={()=>add(p)} className="rounded-xl border border-slate-100 p-3 text-right hover:border-gold-400 disabled:opacity-40" disabled={p.stock<1}><b>{p.product_name}</b><p className="muted mt-1 text-xs">{p.sku} · {p.size||"—"} · {p.color||"—"}</p><div className="mt-2 flex justify-between text-sm"><strong>{p.price.toLocaleString("ar-EG")} ج.م</strong><span className="muted">المتاح: {p.stock}</span></div></button>)}</div></section><section className="panel p-5"><h3 className="mb-4 text-lg font-black">الفاتورة الحالية</h3>{cart.length===0?<p className="muted py-8 text-center">لم تتم إضافة منتجات</p>:cart.map(x=><div key={x.variant_id} className="flex items-center justify-between border-b py-3"><div><b>{x.name}</b><p className="muted text-sm">{x.price.toLocaleString("ar-EG")} × {x.qty}</p></div><div className="flex items-center gap-2"><button className="rounded-lg bg-slate-100 px-3 py-1" onClick={()=>setCart(c=>c.map(y=>y.variant_id===x.variant_id?{...y,qty:Math.max(1,y.qty-1)}:y))}>−</button><button className="rounded-lg bg-slate-100 px-3 py-1" onClick={()=>setCart(c=>c.map(y=>y.variant_id===x.variant_id?{...y,qty:Math.min(y.stock,y.qty+1)}:y))}>＋</button><button className="text-red-600" onClick={()=>setCart(c=>c.filter(y=>y.variant_id!==x.variant_id))}>×</button></div></div>)}<div className="mt-4 grid grid-cols-2 gap-3"><label className="text-sm">الخصم<select className="field mt-1" value={discount} onChange={e=>setDiscount(Number(e.target.value))}><option value={0}>بدون خصم</option>{maxDiscount>0&&<option value={maxDiscount}>خصم {maxDiscount}%</option>}</select></label><label className="text-sm">طريقة الدفع<select className="field mt-1" value={method} onChange={e=>setMethod(e.target.value as typeof method)}><option value="cash">كاش</option><option value="instapay">InstaPay</option><option value="visa">فيزا</option></select></label></div><label className="mt-3 block text-sm">المبلغ المدفوع<input className="field mt-1" type="number" min="0" step="0.01" value={paid} onChange={e=>setPaid(e.target.value)} placeholder={total.toFixed(2)}/></label><label className="mt-3 block text-sm">رقم العميل (مطلوب عند وجود باقي)<input className="field mt-1" value={customer} onChange={e=>setCustomer(e.target.value)} placeholder="01xxxxxxxxx"/></label><label className="mt-3 block text-sm">مرجع التحويل / الفيزا<input className="field mt-1" value={reference} onChange={e=>setReference(e.target.value)}/></label><div className="mt-4 space-y-2 rounded-xl bg-emerald-50 p-4"><div className="flex justify-between"><span>قبل الخصم</span><b>{subtotal.toFixed(2)} ج.م</b></div><div className="flex justify-between"><span>الإجمالي</span><b className="text-xl text-emerald-950">{total.toFixed(2)} ج.م</b></div><div className="flex justify-between text-sm"><span>المتبقي</span><b>{Math.max(0,total-paidValue).toFixed(2)} ج.م</b></div></div>{message&&<p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm">{message}</p>}<button disabled={busy||!cart.length} onClick={finish} className="btn btn-primary mt-4 w-full disabled:opacity-50">{busy?"جارٍ الحفظ…":"اعتماد البيع وإصدار الفاتورة"}</button><p className="muted mt-3 text-xs">يلزم الاتصال بالخادم لاعتماد البيع والتحقق من المخزون ومنع تكرار الفاتورة.</p></section></main>}
+
+import { useMemo, useState, useTransition } from "react";
+import { checkoutSale } from "@/app/actions";
+
+type Item = {
+  variant_id: string;
+  product_name: string;
+  sku: string;
+  barcode: string;
+  size: string | null;
+  color: string | null;
+  price: number;
+  stock: number;
+};
+
+type PaymentMethod = "cash" | "instapay" | "visa";
+
+const paymentLabels: Record<PaymentMethod, string> = {
+  cash: "نقدي",
+  instapay: "InstaPay",
+  visa: "فيزا",
+};
+
+export default function POSClient({
+  catalog,
+  maxDiscount,
+}: {
+  catalog: Item[];
+  maxDiscount: number;
+}) {
+  const [query, setQuery] = useState("");
+  const [cart, setCart] = useState<
+    { variant_id: string; name: string; price: number; qty: number; stock: number }[]
+  >([]);
+  const [discount, setDiscount] = useState(0);
+  const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [secondMethod, setSecondMethod] = useState<PaymentMethod>("instapay");
+  const [paid, setPaid] = useState("");
+  const [secondPaid, setSecondPaid] = useState("");
+  const [reference, setReference] = useState("");
+  const [customer, setCustomer] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, start] = useTransition();
+
+  const filtered = useMemo(
+    () =>
+      catalog
+        .filter((product) =>
+          (
+            product.product_name +
+            " " +
+            product.sku +
+            " " +
+            product.barcode +
+            " " +
+            (product.size || "") +
+            " " +
+            (product.color || "")
+          )
+            .toLowerCase()
+            .includes(query.toLowerCase()),
+        )
+        .slice(0, 16),
+    [catalog, query],
+  );
+
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const total = Math.round(subtotal * (1 - discount / 100) * 100) / 100;
+  const firstAmount = paid === "" ? (secondPaid ? 0 : total) : Number(paid);
+  const secondAmount = Number(secondPaid || 0);
+  const paidValue = firstAmount + secondAmount;
+
+  function add(product: Item) {
+    setCart((old) => {
+      const found = old.find((item) => item.variant_id === product.variant_id);
+      if (found) {
+        return old.map((item) =>
+          item.variant_id === product.variant_id
+            ? { ...item, qty: Math.min(item.stock, item.qty + 1) }
+            : item,
+        );
+      }
+      return [
+        ...old,
+        {
+          variant_id: product.variant_id,
+          name:
+            product.product_name +
+            " · " +
+            [product.size, product.color].filter(Boolean).join(" / "),
+          price: product.price,
+          qty: 1,
+          stock: product.stock,
+        },
+      ];
+    });
+  }
+
+  function finish() {
+    setMessage("");
+
+    if (!cart.length) return setMessage("أضف صنفًا أولًا");
+    if (
+      firstAmount < 0 ||
+      secondAmount < 0 ||
+      paidValue > total ||
+      (total > 0 && paidValue <= 0)
+    ) {
+      return setMessage("راجع المبالغ المدفوعة والإجمالي");
+    }
+    if (paidValue < total && !customer.trim()) {
+      return setMessage("أدخل رقم هاتف العميل عند وجود مبلغ متبقٍ");
+    }
+
+    start(async () => {
+      try {
+        const result = await checkoutSale({
+          idempotency_key: crypto.randomUUID(),
+          items: cart.map((item) => ({
+            variant_id: item.variant_id,
+            quantity: item.qty,
+          })),
+          payments: [
+            ...(firstAmount > 0
+              ? [{ method, amount: firstAmount, reference }]
+              : []),
+            ...(secondAmount > 0
+              ? [{ method: secondMethod, amount: secondAmount, reference }]
+              : []),
+          ],
+          discount_percent: discount,
+          customer_phone: customer || undefined,
+        });
+
+        setMessage("تم إنشاء الفاتورة رقم " + (result?.invoice_number || result?.id || ""));
+        setCart([]);
+        setPaid("");
+        setSecondPaid("");
+        setCustomer("");
+        setReference("");
+        setDiscount(0);
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "تعذر إتمام البيع");
+      }
+    });
+  }
+
+  return (
+    <main className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+      <section className="panel p-5">
+        <h2 className="mb-4 text-xl font-black">الكاشير ونقطة البيع</h2>
+        <input
+          className="field mb-4"
+          placeholder="امسح الباركود أو ابحث باسم الصنف / SKU"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          autoFocus
+        />
+        <div className="grid gap-2 sm:grid-cols-2">
+          {filtered.map((product) => (
+            <button
+              key={product.variant_id}
+              onClick={() => add(product)}
+              className="rounded-xl border border-slate-100 p-3 text-right hover:border-gold-400 disabled:opacity-40"
+              disabled={product.stock < 1}
+            >
+              <b>{product.product_name}</b>
+              <p className="muted mt-1 text-xs">
+                {product.sku} · {product.size || "—"} · {product.color || "—"}
+              </p>
+              <div className="mt-2 flex justify-between text-sm">
+                <strong>{product.price.toLocaleString("ar-EG")} ج.م</strong>
+                <span className="muted">المتاح: {product.stock}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel p-5">
+        <h3 className="mb-4 text-lg font-black">الفاتورة الحالية</h3>
+
+        {cart.length === 0 ? (
+          <p className="muted py-8 text-center">لم تتم إضافة منتجات</p>
+        ) : (
+          cart.map((item) => (
+            <div
+              key={item.variant_id}
+              className="flex items-center justify-between border-b py-3"
+            >
+              <div>
+                <b>{item.name}</b>
+                <p className="muted text-sm">
+                  {item.price.toLocaleString("ar-EG")} × {item.qty}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="rounded-lg bg-slate-100 px-3 py-1"
+                  onClick={() =>
+                    setCart((current) =>
+                      current.map((line) =>
+                        line.variant_id === item.variant_id
+                          ? { ...line, qty: Math.max(1, line.qty - 1) }
+                          : line,
+                      ),
+                    )
+                  }
+                  aria-label="تقليل الكمية"
+                >
+                  −
+                </button>
+                <button
+                  className="rounded-lg bg-slate-100 px-3 py-1"
+                  onClick={() =>
+                    setCart((current) =>
+                      current.map((line) =>
+                        line.variant_id === item.variant_id
+                          ? { ...line, qty: Math.min(line.stock, line.qty + 1) }
+                          : line,
+                      ),
+                    )
+                  }
+                  aria-label="زيادة الكمية"
+                >
+                  ＋
+                </button>
+                <button
+                  className="text-red-600"
+                  onClick={() =>
+                    setCart((current) =>
+                      current.filter((line) => line.variant_id !== item.variant_id),
+                    )
+                  }
+                  aria-label="حذف الصنف"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <label className="text-sm">
+            الخصم المسموح حتى {maxDiscount}%
+            <input
+              className="field mt-1"
+              type="number"
+              min="0"
+              max={maxDiscount}
+              step="0.5"
+              value={discount}
+              disabled={maxDiscount === 0}
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                setDiscount(
+                  Number.isFinite(value)
+                    ? Math.min(maxDiscount, Math.max(0, value))
+                    : 0,
+                );
+              }}
+            />
+          </label>
+          <label className="text-sm">
+            طريقة الدفع الأولى
+            <select
+              className="field mt-1"
+              value={method}
+              onChange={(event) => setMethod(event.target.value as PaymentMethod)}
+            >
+              {Object.entries(paymentLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <label className="mt-3 block text-sm">
+          المبلغ المدفوع بالطريقة الأولى
+          <input
+            className="field mt-1"
+            type="number"
+            min="0"
+            step="0.01"
+            value={paid}
+            onChange={(event) => setPaid(event.target.value)}
+            placeholder={total.toFixed(2)}
+          />
+        </label>
+
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <label className="text-sm">
+            طريقة الدفع الثانية
+            <select
+              className="field mt-1"
+              value={secondMethod}
+              onChange={(event) => setSecondMethod(event.target.value as PaymentMethod)}
+            >
+              {Object.entries(paymentLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            المبلغ بالطريقة الثانية
+            <input
+              className="field mt-1"
+              type="number"
+              min="0"
+              step="0.01"
+              value={secondPaid}
+              onChange={(event) => setSecondPaid(event.target.value)}
+              placeholder="0.00"
+            />
+          </label>
+        </div>
+
+        <label className="mt-3 block text-sm">
+          رقم العميل (مطلوب عند وجود باقي)
+          <input
+            className="field mt-1"
+            value={customer}
+            onChange={(event) => setCustomer(event.target.value)}
+            placeholder="01xxxxxxxxx"
+          />
+        </label>
+
+        <label className="mt-3 block text-sm">
+          مرجع التحويل / الفيزا
+          <input
+            className="field mt-1"
+            value={reference}
+            onChange={(event) => setReference(event.target.value)}
+          />
+        </label>
+
+        <div className="mt-4 space-y-2 rounded-xl bg-emerald-50 p-4">
+          <div className="flex justify-between">
+            <span>قبل الخصم</span>
+            <b>{subtotal.toFixed(2)} ج.م</b>
+          </div>
+          <div className="flex justify-between">
+            <span>الإجمالي بعد الخصم</span>
+            <b className="text-xl text-emerald-950">{total.toFixed(2)} ج.م</b>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>إجمالي المدفوع</span>
+            <b>{paidValue.toFixed(2)} ج.م</b>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>المتبقي</span>
+            <b>{Math.max(0, total - paidValue).toFixed(2)} ج.م</b>
+          </div>
+        </div>
+
+        {message && (
+          <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm">{message}</p>
+        )}
+
+        <button
+          disabled={busy || !cart.length}
+          onClick={finish}
+          className="btn btn-primary mt-4 w-full disabled:opacity-50"
+        >
+          {busy ? "جارٍ الحفظ…" : "اعتماد البيع وإصدار الفاتورة"}
+        </button>
+        <p className="muted mt-3 text-xs">
+          يلزم الاتصال بالخادم لاعتماد البيع والتحقق من المخزون ومنع تكرار الفاتورة.
+        </p>
+      </section>
+    </main>
+  );
+}
