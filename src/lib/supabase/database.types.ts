@@ -1059,6 +1059,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_financial_report: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       open_cash_session: { Args: { p_opening_cash?: number }; Returns: string }
