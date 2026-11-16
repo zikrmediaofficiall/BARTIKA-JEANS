@@ -564,7 +564,7 @@ export async function recordSupplierPayment(formData: FormData) {
 }
 
 export async function createOnlineOrder(formData: FormData) {
-  const { supabase } = await createClient();
+  const supabase = await createClient();
   const customerName = String(formData.get("customer_name") || "").trim();
   const customerPhone = String(formData.get("customer_phone") || "").trim();
   const deliveryMethod = z.enum(["delivery", "pickup"]).parse(
