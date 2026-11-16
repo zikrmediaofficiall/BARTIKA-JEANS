@@ -70,11 +70,11 @@ export function ExchangeForm({
           replacement,
           returnedValue:
             saleItem && Number.isInteger(quantity) && quantity > 0
-              ? saleItem.netUnitPrice * quantity
+              ? Math.round(saleItem.netUnitPrice * quantity * 100) / 100
               : 0,
           replacementValue:
             replacement && Number.isInteger(quantity) && quantity > 0
-              ? replacement.price * quantity
+              ? Math.round(replacement.price * quantity * 100) / 100
               : 0,
         };
       }),
@@ -96,6 +96,7 @@ export function ExchangeForm({
     if (!Number.isInteger(line.quantity) || line.quantity < 1) return false;
     if (line.quantity > line.saleItem.remaining) return false;
     if (line.replacement_variant_id && !line.replacement) return false;
+    if (line.replacement && line.replacement.stock < line.quantity) return false;
     return true;
   });
 
