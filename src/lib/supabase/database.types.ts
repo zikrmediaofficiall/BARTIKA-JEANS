@@ -656,6 +656,7 @@ export type Database = {
           delivery_address: string | null
           delivery_method: string
           due: number
+          expires_at: string
           id: string
           idempotency_key: string
           order_number: number
@@ -673,6 +674,7 @@ export type Database = {
           delivery_address?: string | null
           delivery_method: string
           due?: number
+          expires_at?: string
           id?: string
           idempotency_key: string
           order_number?: number
@@ -690,6 +692,7 @@ export type Database = {
           delivery_address?: string | null
           delivery_method?: string
           due?: number
+          expires_at?: string
           id?: string
           idempotency_key?: string
           order_number?: number
@@ -1544,6 +1547,7 @@ export type Database = {
         }
         Returns: Json
       }
+      expire_stale_online_orders: { Args: never; Returns: number }
       get_financial_report: {
         Args: { p_from: string; p_to: string }
         Returns: Json
