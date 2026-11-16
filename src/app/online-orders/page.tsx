@@ -12,7 +12,7 @@ export default async function OnlineOrders() {
   ] = await Promise.all([
     supabase
       .from("online_orders")
-      .select("id,order_number,customer_name,customer_phone,delivery_method,delivery_address,customer_notes,status,subtotal,paid,due,payment_status,created_at,online_order_items(id,product_name_snapshot,size_snapshot,color_snapshot,quantity,unit_price,line_total)")
+      .select("id,order_number,customer_name,customer_phone,delivery_method,delivery_address,customer_notes,status,subtotal,paid,due,payment_status,created_at,expires_at,online_order_items(id,product_name_snapshot,size_snapshot,color_snapshot,quantity,unit_price,line_total)")
       .order("created_at", { ascending: false })
       .limit(100),
     supabase
@@ -72,6 +72,11 @@ export default async function OnlineOrders() {
                 <div>
                   <h3 className="text-lg font-black">طلب #{order.order_number}</h3>
                   <p className="muted mt-1 text-xs">{new Date(order.created_at).toLocaleString("ar-EG")}</p>
+                  {(order.status === "pending" || order.status === "confirmed") && Number(order.paid) <= 0.009 ? (
+                    <p className="mt-1 text-xs text-amber-800">
+                      انتهاء الحجز: {new Date(order.expires_at).toLocaleString("ar-EG")}
+                    </p>
+                  ) : null}
                 </div>
                 <span className={"rounded-full px-3 py-2 text-xs font-bold " + (
                   order.status === "pending" ? "bg-amber-100 text-amber-900" :
