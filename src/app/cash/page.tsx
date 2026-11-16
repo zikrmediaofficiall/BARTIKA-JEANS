@@ -21,7 +21,7 @@ export default async function Cash() {
       canReadExpenses
         ? supabase
             .from("expenses")
-            .select("id,category,description,amount,payment_method,created_at")
+            .select("id,category,description,amount,payment_method,cash_session_id,created_at")
             .order("created_at", { ascending: false })
             .limit(50)
         : Promise.resolve({ data: [], error: null }),
@@ -112,6 +112,19 @@ export default async function Cash() {
             <option value="instapay">InstaPay</option>
             <option value="visa">فيزا</option>
           </select>
+          <select className="field" name="cash_session_id" defaultValue="">
+            <option value="">مصروف عام من خزينة المحل</option>
+            {(sessions || [])
+              .filter((session) => session.status === "open")
+              .map((session) => (
+                <option key={session.id} value={session.id}>
+                  وردية الموظف · {session.seller_id.slice(0, 8)}
+                </option>
+              ))}
+          </select>
+          <p className="muted text-xs sm:col-span-2 xl:col-span-4">
+            المصروف العام لا يُخصم من درج أي بائع. اربط المصروف النقدي بورديّة محددة فقط عندما يكون المبلغ خارجًا من درجها.
+          </p>
           <button className="btn btn-primary">حفظ المصروف</button>
         </form>
       )}
@@ -127,6 +140,7 @@ export default async function Cash() {
                 <th>الوصف</th>
                 <th>القيمة</th>
                 <th>الدفع</th>
+                <th>مصدر النقدية</th>
               </tr>
             </thead>
             <tbody>
@@ -137,6 +151,11 @@ export default async function Cash() {
                   <td>{expense.description}</td>
                   <td>{Number(expense.amount).toFixed(2)}</td>
                   <td>{expense.payment_method}</td>
+                  <td>
+                    {expense.cash_session_id
+                      ? `وردية · ${expense.cash_session_id.slice(0, 8)}`
+                      : "خزينة المحل"}
+                  </td>
                 </tr>
               ))}
             </tbody>
