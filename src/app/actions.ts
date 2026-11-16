@@ -331,7 +331,7 @@ const exchangeItemInputSchema = z.object({
 });
 
 export async function processSaleExchange(formData: FormData) {
-  const { supabase, user, profile } = await requireUser();
+  const { supabase, profile } = await requireUser();
   if (profile.role !== "admin" && profile.role !== "seller") {
     throw new Error("تنفيذ الاستبدال متاح للأدمن والبائعين فقط");
   }
@@ -377,7 +377,7 @@ export async function processSaleExchange(formData: FormData) {
     throw new Error("أدخل مرجع التحويل أو الفيزا لتوثيق التسوية");
   }
 
-  const { data, error } = await supabase.rpc("process_sale_exchange", {
+  const { error } = await supabase.rpc("process_sale_exchange", {
     p_original_sale_id: originalSaleId,
     p_reason: reason,
     p_exchange_type: exchangeType,
