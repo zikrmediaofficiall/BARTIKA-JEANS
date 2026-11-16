@@ -6,11 +6,17 @@ export const revalidate = 60;
 
 export default async function PublicShop() {
   const supabase = await createClient();
-  const [{ data: catalog, error }, { data: settings }] = await Promise.all([
+  const [
+    { data: catalog, error },
+    { data: settings },
+    { data: shippingOptions, error: shippingError },
+  ] = await Promise.all([
     supabase.rpc("get_public_catalog"),
     supabase.rpc("get_public_store_settings").maybeSingle(),
+    supabase.rpc("get_public_shipping_options"),
   ]);
   if (error) throw new Error("تعذر تحميل المنتجات المتاحة: " + error.message);
+  if (shippingError) throw new Error("تعذر تحميل خيارات الشحن: " + shippingError.message);
 
   return (
     <main className="min-h-screen">
@@ -23,6 +29,7 @@ export default async function PublicShop() {
           <nav className="flex flex-wrap gap-3 text-sm text-emerald-100">
             {settings?.phone ? <a href={"tel:" + settings.phone}>اتصل بنا</a> : null}
             {settings?.whatsapp_url ? <a href={settings.whatsapp_url} target="_blank" rel="noreferrer">واتساب</a> : null}
+            <Link href="/links">روابطنا</Link>
             <Link href="/login" className="rounded-lg border border-white/30 px-3 py-2">دخول الإدارة</Link>
           </nav>
         </div>
@@ -33,7 +40,7 @@ export default async function PublicShop() {
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-emerald-100">اكتشف تشكيلتنا من الجينز والملابس الرجالي، واختر المقاس واللون المناسبين واطلب بسهولة.</p>
       </section>
       <div className="mx-auto max-w-7xl px-4 py-8">
-        <StorefrontClient catalog={(catalog || []) as never} />
+        <StorefrontClient catalog={(catalog || []) as never} shippingOptions={(shippingOptions || []) as never} />
       </div>
       <footer className="mt-12 bg-slate-950 px-4 py-8 text-center text-sm text-slate-300">
         <b className="text-white">{settings?.store_name || "BARTIKA JEANS"}</b>
