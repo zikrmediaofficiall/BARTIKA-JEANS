@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const logo = "https://res.cloudinary.com/lnsnp6km/image/upload/v1794847704/bartika-brand-logo-2026.webp";
+const logo = "/bartika-logo.webp";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {

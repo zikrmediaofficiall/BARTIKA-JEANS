@@ -13,9 +13,9 @@ export const metadata: Metadata = {
   description: "تسوق الجينز والملابس الرجالي من BARTIKA JEANS واطلب بسهولة.",
   manifest: "/manifest.json",
   icons: {
-    icon: [{ url: BRAND_LOGO_URL, type: "image/webp", sizes: "256x256" }],
-    shortcut: [{ url: BRAND_LOGO_URL, type: "image/webp" }],
-    apple: [{ url: BRAND_LOGO_URL, type: "image/webp", sizes: "256x256" }],
+    icon: [{ url: "/bartika-logo.webp", type: "image/webp", sizes: "256x256" }],
+    shortcut: [{ url: "/bartika-logo.webp", type: "image/webp" }],
+    apple: [{ url: "/bartika-logo.webp", type: "image/webp", sizes: "256x256" }],
   },
   openGraph: {
     title: "BARTIKA JEANS | بارتيكا جينز",
