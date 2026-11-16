@@ -1,6 +1,7 @@
 package com.bartika.jeans;
 
 import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
@@ -8,6 +9,9 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 import android.webkit.CookieManager;
 import android.webkit.ServiceWorkerController;
 import android.webkit.WebChromeClient;
@@ -23,6 +27,7 @@ public final class MainActivity extends Activity {
     private static final String ALLOWED_HOST = "bartika-jeans.vercel.app";
     private WebView webView;
     private boolean tryingOfflineFallback = false;
+    private OnBackInvokedCallback backInvokedCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +35,14 @@ public final class MainActivity extends Activity {
         if (android.os.Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(true);
         getWindow().setStatusBarColor(android.graphics.Color.rgb(0, 16, 64));
         getWindow().setNavigationBarColor(android.graphics.Color.rgb(0, 0, 16));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            backInvokedCallback = this::handleBackNavigation;
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    backInvokedCallback
+            );
+        }
+
         webView = new WebView(this);
         webView.setBackgroundColor(android.graphics.Color.rgb(0, 0, 16));
         setContentView(webView);
@@ -116,14 +129,26 @@ public final class MainActivity extends Activity {
         webView.loadDataWithBaseURL(HOME_URL, html, "text/html", "UTF-8", null);
     }
 
+    private void handleBackNavigation() {
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            finish();
+        }
+    }
+
+    @SuppressLint("GestureBackNavigation")
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        // Compatibility path for Android versions below API 33.
+        handleBackNavigation();
     }
 
     @Override
     protected void onDestroy() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && backInvokedCallback != null) {
+            getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backInvokedCallback);
+        }
         if (webView != null) {
             webView.stopLoading();
             webView.setWebViewClient(null);
