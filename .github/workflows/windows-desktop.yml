@@ -5,11 +5,13 @@ on:
     paths:
       - "desktop/windows/**"
       - ".github/workflows/windows-desktop.yml"
+      - "README.md"
   push:
     branches: [main]
     paths:
       - "desktop/windows/**"
       - ".github/workflows/windows-desktop.yml"
+      - "README.md"
   workflow_dispatch:
 
 permissions:
@@ -22,7 +24,7 @@ concurrency:
 jobs:
   build-windows:
     runs-on: windows-2022
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -36,29 +38,38 @@ jobs:
         working-directory: desktop/windows
         run: npm install --no-audit --no-fund
 
-      - name: Check desktop launcher syntax
+      - name: Check launcher and packaging configuration
         working-directory: desktop/windows
-        run: node --check main.cjs
+        run: npm run check
 
       - name: Build universal Windows installer (x64 + ia32)
         working-directory: desktop/windows
         run: npm run dist:win
 
-      - name: Verify installer output
+      - name: Verify installer and generate SHA-256 checksum
         shell: pwsh
         working-directory: desktop/windows
         run: |
-          $files = Get-ChildItem -Path "dist" -Filter "*.exe" -File
-          $files | Format-Table Name, Length
-          if ($files.Count -lt 1) {
-            throw "Expected the combined x64/ia32 Windows installer executable."
+          $installer = Get-ChildItem -Path "dist" -Filter "*.exe" -File | Select-Object -First 1
+          if ($null -eq $installer -or $installer.Length -lt 50000000) {
+            throw "Windows installer missing or unexpectedly small."
           }
+          $hash = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLowerInvariant()
+          "$hash  $($installer.Name)" | Set-Content -Path "dist/SHA256SUMS.txt" -Encoding ascii
+          Copy-Item "README_AR.md" "dist/README_AR.md"
+          Copy-Item "TROUBLESHOOTING_AR.md" "dist/TROUBLESHOOTING_AR.md"
+          Get-ChildItem -Path "dist" -File | Format-Table Name, Length
+          Get-Content "dist/SHA256SUMS.txt"
 
-      - name: Upload Windows installer
+      - name: Upload Windows installer and documentation
         uses: actions/upload-artifact@v4
         with:
           name: bartika-windows-installer-${{ github.sha }}
-          path: desktop/windows/dist/*.exe
+          path: |
+            desktop/windows/dist/*.exe
+            desktop/windows/dist/SHA256SUMS.txt
+            desktop/windows/dist/README_AR.md
+            desktop/windows/dist/TROUBLESHOOTING_AR.md
           if-no-files-found: error
           retention-days: 30
 
@@ -78,13 +89,13 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Download Windows installer
+      - name: Download Windows installer and documentation
         uses: actions/download-artifact@v4
         with:
           name: bartika-windows-installer-${{ github.sha }}
           path: release-files
 
-      - name: Publish GitHub prerelease
+      - name: Publish verified GitHub prerelease
         env:
           GH_TOKEN: ${{ github.token }}
           TARGET_SHA: ${{ github.sha }}
@@ -92,8 +103,16 @@ jobs:
         shell: pwsh
         run: |
           $tag = "v1.0.0-win7-legacy.$env:RUN_NUMBER"
-          $files = Get-ChildItem -Path "release-files" -Filter "*.exe" -File
-          if ($files.Count -lt 1) {
-            throw "Windows installer is missing; refusing to publish."
+          $files = Get-ChildItem -Path "release-files" -File
+          $installer = $files | Where-Object { $_.Extension -eq ".exe" } | Select-Object -First 1
+          $checksum = $files | Where-Object { $_.Name -eq "SHA256SUMS.txt" } | Select-Object -First 1
+          if ($null -eq $installer -or $null -eq $checksum) {
+            throw "Installer or SHA-256 file missing; refusing to publish."
           }
-          gh release create $tag $files.FullName --target $env:TARGET_SHA --title "BARTIKA JEANS Windows 7 Legacy $env:RUN_NUMBER" --prerelease --notes "Legacy Windows 7 compatibility build. This uses Electron 22 / Chromium 108, which no longer receives security updates. Windows 7 has also reached end of security support. Testing/compatibility only; do not use for real customer, sales, or credential data. The combined installer supports x64 and ia32. Requires internet for normal use; offline remains limited to the existing cached POS workflow."
+          $line = Get-Content $checksum.FullName | Select-Object -First 1
+          $expected = $line.Substring(0, 64).ToLowerInvariant()
+          $actual = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLowerInvariant()
+          if ($expected -ne $actual) {
+            throw "SHA-256 mismatch before release upload."
+          }
+          gh release create $tag $files.FullName --target $env:TARGET_SHA --title "BARTIKA JEANS Windows 7 Legacy 2 — Startup Fix $env:RUN_NUMBER" --prerelease --notes "Startup fix release for Windows 7 compatibility. Shows a local startup screen before network navigation, disables GPU acceleration for old graphics drivers, adds a 30-second connection fallback, and records startup/renderer errors to a local log. Includes installer, SHA256SUMS.txt, Arabic installation guide, and Arabic troubleshooting guide. Electron 22 / Chromium 108 is end-of-life and Windows 7 is unsupported by Microsoft; this remains a testing/compatibility build only, not for real customer, sales, or credential data. Requires internet for normal use; offline remains limited to the existing cached POS workflow."
