@@ -1,11 +1,12 @@
 {
   "name": "bartika-jeans-windows",
-  "version": "1.0.0-legacy.1",
+  "version": "1.0.0-legacy.2",
   "private": true,
-  "description": "Legacy Windows desktop launcher for BARTIKA JEANS",
+  "description": "Windows desktop launcher for BARTIKA JEANS with legacy Windows 7 compatibility",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
+    "check": "node --check main.cjs",
     "dist:win": "electron-builder --win nsis --x64 --ia32 --publish never"
   },
   "devDependencies": {
@@ -16,7 +17,7 @@
     "appId": "com.bartika.jeans.desktop",
     "productName": "BARTIKA JEANS",
     "directories": { "output": "dist" },
-    "files": ["main.cjs", "offline.html", "package.json"],
+    "files": ["main.cjs", "startup.html", "offline.html", "package.json"],
     "asar": true,
     "compression": "normal",
     "win": {
