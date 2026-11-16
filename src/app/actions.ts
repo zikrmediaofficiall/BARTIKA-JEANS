@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin, requireUser } from "@/lib/auth";
+import { normalizeVariantBarcodes } from "@/lib/barcode";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
@@ -108,7 +109,7 @@ export async function addProduct(formData: FormData): Promise<void> {
     throw new Error("راجع المقاسات والألوان والباركود والكميات الافتتاحية");
   }
 
-  const variants = parsedVariants.data;
+  const variants = normalizeVariantBarcodes(parsedVariants.data);
   const optionKeys = variants.map((variant) =>
     `${variant.size.normalize("NFKC").toLocaleLowerCase("ar")}::${variant.color.normalize("NFKC").toLocaleLowerCase("ar")}`,
   );
