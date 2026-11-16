@@ -182,10 +182,10 @@ begin
     raise exception 'تم استلام عدة طلبات من هذا الرقم مؤخرًا. حاول مرة أخرى لاحقًا أو تواصل مع المتجر.';
   end if;
 
-  if p_delivery_method not in ('delivery','pickup') then
+  if p_delivery_method is null or p_delivery_method not in ('delivery','pickup') then
     raise exception 'طريقة الاستلام غير صحيحة';
   end if;
-  if p_payment_preference not in ('cod','instapay','visa','pickup_cash') then
+  if p_payment_preference is null or p_payment_preference not in ('cod','instapay','visa','pickup_cash') then
     raise exception 'طريقة الدفع المختارة غير صحيحة';
   end if;
   if p_delivery_method = 'delivery' then
