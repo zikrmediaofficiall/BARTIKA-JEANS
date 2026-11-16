@@ -8,7 +8,7 @@ export default async function PublicShop() {
   const supabase = await createClient();
   const [{ data: catalog, error }, { data: settings }] = await Promise.all([
     supabase.rpc("get_public_catalog"),
-    supabase.from("store_settings").select("store_name,store_name_ar,logo_url,phone,whatsapp_url,address,facebook_url,instagram_url,tiktok_url").eq("id",1).maybeSingle(),
+    supabase.rpc("get_public_store_settings").maybeSingle(),
   ]);
   if (error) throw new Error("تعذر تحميل المنتجات المتاحة: " + error.message);
 
