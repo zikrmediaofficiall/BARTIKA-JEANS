@@ -624,6 +624,10 @@ export async function setOnlineOrderStatus(formData: FormData) {
   revalidatePath("/online-orders");
   revalidatePath("/shop");
   revalidatePath("/inventory");
+  revalidatePath("/invoices");
+  revalidatePath("/customers");
+  revalidatePath("/reports");
+  revalidatePath("/cash");
 }
 
 export async function recordOnlineOrderPayment(formData: FormData) {
