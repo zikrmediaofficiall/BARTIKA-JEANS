@@ -6,12 +6,12 @@ returns table (
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select
     nullif(trim(s.instapay_ipa), ''),
     nullif(trim(s.instapay_url), '')
-  from public.store_settings s
+  from public.store_settings as s
   where s.id = 1
   limit 1;
 $$;
