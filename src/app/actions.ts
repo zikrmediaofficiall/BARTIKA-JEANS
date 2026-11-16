@@ -99,16 +99,13 @@ export async function checkoutSale(input: unknown) {
 const managerPermissionKeys = [
   "dashboard.read",
   "sales.read_all",
-  "inventory.read_movements",
-  "purchases.read",
+    "purchases.read",
   "stocktake.read",
   "cash.read_all",
   "expenses.read",
   "customers.read",
   "staff.read",
   "exchanges.read",
-  "orders.read",
-  "orders.manage",
   "reports.read",
 ] as const;
 
