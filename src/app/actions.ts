@@ -21,6 +21,57 @@ export async function signOut() {
   redirect("/login");
 }
 
+const storeSettingsSchema = z.object({
+  store_name: z.string().trim().min(2).max(100),
+  store_name_ar: z.string().trim().min(2).max(100),
+  phone: z.string().trim().max(30),
+  address: z.string().trim().max(250),
+  facebook_url: z.union([z.literal(""), z.string().url()]),
+  instagram_url: z.union([z.literal(""), z.string().url()]),
+  tiktok_url: z.union([z.literal(""), z.string().url()]),
+  whatsapp_url: z.union([z.literal(""), z.string().url()]),
+  instapay_ipa: z.string().trim().max(120),
+  instapay_url: z.union([z.literal(""), z.string().url()]),
+  exchange_days: z.coerce.number().int().min(0).max(30),
+  quick_discount_percent: z.coerce.number().finite().min(0).max(100),
+});
+
+export async function updateStoreSettings(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const parsed = storeSettingsSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    throw new Error("راجع بيانات المتجر والروابط قبل الحفظ");
+  }
+
+  const values = parsed.data;
+  const { data, error } = await supabase
+    .from("store_settings")
+    .update({
+      store_name: values.store_name,
+      store_name_ar: values.store_name_ar,
+      phone: values.phone || null,
+      address: values.address || null,
+      facebook_url: values.facebook_url || null,
+      instagram_url: values.instagram_url || null,
+      tiktok_url: values.tiktok_url || null,
+      whatsapp_url: values.whatsapp_url || null,
+      instapay_ipa: values.instapay_ipa || null,
+      instapay_url: values.instapay_url || null,
+      exchange_days: values.exchange_days,
+      quick_discount_percent: values.quick_discount_percent,
+    })
+    .eq("id", 1)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("لم يتم العثور على سجل إعدادات المتجر");
+
+  revalidatePath("/settings");
+  revalidatePath("/");
+  revalidatePath("/login");
+}
+
 const productSchema = z.object({
   name: z.string().trim().min(2),
   sku: z.string().trim().min(2),

@@ -909,32 +909,50 @@ export type Database = {
         Row: {
           address: string | null
           exchange_days: number
+          facebook_url: string | null
           id: number
+          instagram_url: string | null
+          instapay_ipa: string | null
+          instapay_url: string | null
           logo_url: string | null
           phone: string | null
           quick_discount_percent: number
           store_name: string
           store_name_ar: string
+          tiktok_url: string | null
+          whatsapp_url: string | null
         }
         Insert: {
           address?: string | null
           exchange_days?: number
+          facebook_url?: string | null
           id?: number
+          instagram_url?: string | null
+          instapay_ipa?: string | null
+          instapay_url?: string | null
           logo_url?: string | null
           phone?: string | null
           quick_discount_percent?: number
           store_name?: string
           store_name_ar?: string
+          tiktok_url?: string | null
+          whatsapp_url?: string | null
         }
         Update: {
           address?: string | null
           exchange_days?: number
+          facebook_url?: string | null
           id?: number
+          instagram_url?: string | null
+          instapay_ipa?: string | null
+          instapay_url?: string | null
           logo_url?: string | null
           phone?: string | null
           quick_discount_percent?: number
           store_name?: string
           store_name_ar?: string
+          tiktok_url?: string | null
+          whatsapp_url?: string | null
         }
         Relationships: []
       }
