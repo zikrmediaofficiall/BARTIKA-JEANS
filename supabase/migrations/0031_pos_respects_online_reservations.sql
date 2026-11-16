@@ -300,6 +300,6 @@ begin
     'due', v_total - v_paid
   );
 end;
-$function$
+$function$;
 revoke all on function public.create_sale(uuid,jsonb,jsonb,numeric,text) from public, anon;
 grant execute on function public.create_sale(uuid,jsonb,jsonb,numeric,text) to authenticated;
