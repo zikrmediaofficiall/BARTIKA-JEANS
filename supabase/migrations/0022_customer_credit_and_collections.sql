@@ -135,7 +135,7 @@ begin
   from public.profiles
   where id = v_user and is_active = true;
 
-  if v_role not in ('admin', 'seller') then
+  if v_role is null or v_role not in ('admin', 'seller') then
     raise exception 'تحصيل أرصدة العملاء متاح للأدمن والبائعين فقط';
   end if;
 
@@ -176,6 +176,27 @@ begin
 
   if not found or v_sale.status <> 'completed' then
     raise exception 'الفاتورة غير موجودة أو ملغاة';
+  end if;
+
+  -- Recheck after locking the sale so concurrent retries return the same payment.
+  select *
+    into v_existing
+  from public.payments
+  where idempotency_key = p_idempotency_key;
+
+  if found then
+    if v_existing.sale_id <> p_sale_id
+       or v_existing.amount <> p_amount
+       or v_existing.method <> p_method then
+      raise exception 'تم استخدام معرّف التحصيل نفسه ببيانات مختلفة';
+    end if;
+
+    return jsonb_build_object(
+      'payment_id', v_existing.id,
+      'paid', v_sale.paid,
+      'due', v_sale.due,
+      'duplicate', true
+    );
   end if;
 
   if v_role = 'seller' and v_sale.seller_id <> v_user then
