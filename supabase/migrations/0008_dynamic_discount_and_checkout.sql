@@ -69,6 +69,22 @@ begin
     raise exception 'بيانات الدفع غير صحيحة';
   end if;
 
+  -- A completed request may be retried after a timeout. Return its invoice before
+  -- touching stock so an idempotent retry still succeeds when stock is now zero.
+  select id, invoice_number, total
+    into v_sale_id, v_invoice, v_existing_total
+  from public.sales
+  where idempotency_key = p_idempotency_key;
+
+  if v_sale_id is not null then
+    return jsonb_build_object(
+      'id', v_sale_id,
+      'invoice_number', v_invoice,
+      'total', v_existing_total,
+      'duplicate', true
+    );
+  end if;
+
   -- Lock each variant once in deterministic order and validate the aggregated
   -- requested quantity. This prevents duplicate lines from bypassing stock checks.
   for aggregate_item in
@@ -87,6 +103,39 @@ begin
     from public.inventory
     where variant_id = aggregate_item.variant_id
     for update;
+
+    if not found then
+      raise exception 'متغير المنتج غير موجود في سجل المخزون';
+    end if;
+  end loop;
+
+  -- A retry may have waited behind the first request on the inventory locks.
+  -- Check the idempotency key again before validating the newly reduced stock.
+  select id, invoice_number, total
+    into v_sale_id, v_invoice, v_existing_total
+  from public.sales
+  where idempotency_key = p_idempotency_key;
+
+  if v_sale_id is not null then
+    return jsonb_build_object(
+      'id', v_sale_id,
+      'invoice_number', v_invoice,
+      'total', v_existing_total,
+      'duplicate', true
+    );
+  end if;
+
+  for aggregate_item in
+    select
+      (entry.value->>'variant_id')::uuid as variant_id,
+      sum((entry.value->>'quantity')::integer)::integer as requested_quantity
+    from jsonb_array_elements(p_items) as entry(value)
+    group by (entry.value->>'variant_id')::uuid
+    order by (entry.value->>'variant_id')::uuid
+  loop
+    select quantity into v_stock
+    from public.inventory
+    where variant_id = aggregate_item.variant_id;
 
     if not found or coalesce(v_stock, 0) < aggregate_item.requested_quantity then
       raise exception 'الكمية غير كافية للمخزون';
@@ -118,6 +167,15 @@ begin
 
   v_discount := round(v_subtotal * p_discount_percent / 100, 2);
   v_total := v_subtotal - v_discount;
+
+  if exists (
+    select 1
+    from jsonb_array_elements(p_payments) as entry(value)
+    where coalesce((entry.value->>'amount')::numeric, 0) <= 0
+       or coalesce(entry.value->>'method', '') not in ('cash', 'instapay', 'visa')
+  ) then
+    raise exception 'راجع وسيلة الدفع والمبلغ؛ يجب أن تكون كل دفعة موجبة وصحيحة';
+  end if;
 
   select coalesce(sum((entry.value->>'amount')::numeric), 0)
     into v_paid
