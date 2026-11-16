@@ -1,2 +1,47 @@
-import {redirect} from "next/navigation";import {getSessionContext} from "@/lib/auth";import {Shell} from "@/components/shell";
-export default async function Inventory(){const {supabase,user,profile}=await getSessionContext();if(!user)redirect("/login");if(profile?.role!=="admin")redirect("/");const {data}=await supabase.from("inventory").select("quantity,product_variants(barcode,size,color,products(name,sku))").order("updated_at",{ascending:false});return <Shell user={user.email||""} role="admin"><h2 className="mb-5 text-2xl font-black">المخزون والجرد</h2><div className="panel table-wrap p-4"><table><thead><tr><th>الصنف</th><th>SKU</th><th>باركود</th><th>المقاس</th><th>اللون</th><th>الرصيد</th></tr></thead><tbody>{(data||[]).map((x:any,i:number)=><tr key={i}><td>{x.product_variants?.products?.name}</td><td>{x.product_variants?.products?.sku}</td><td>{x.product_variants?.barcode}</td><td>{x.product_variants?.size||"—"}</td><td>{x.product_variants?.color||"—"}</td><td className="font-bold">{x.quantity}</td></tr>)}</tbody></table></div><p className="muted mt-4 text-sm">الجرد الافتتاحي يتم إدخاله من المنتجات. اعتماد تسويات الجرد يتطلب إنشاء جلسة جرد وتوثيق الفروق في سجل الحركات.</p></Shell>}
+import { requirePermission } from "@/lib/auth";
+import { Shell } from "@/components/shell";
+
+export default async function Inventory() {
+  const { supabase, user, profile } = await requirePermission("inventory.read");
+  const { data, error } = await supabase
+    .from("inventory")
+    .select("quantity,product_variants(barcode,size,color,products(name,sku))")
+    .order("updated_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (
+    <Shell user={user.email || ""} role={profile.role}>
+      <h2 className="mb-5 text-2xl font-black">المخزون والجرد</h2>
+      <div className="panel table-wrap p-4">
+        <table>
+          <thead>
+            <tr>
+              <th>الصنف</th>
+              <th>SKU</th>
+              <th>باركود</th>
+              <th>المقاس</th>
+              <th>اللون</th>
+              <th>الرصيد</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data || []).map((row, index) => (
+              <tr key={index}>
+                <td>{row.product_variants?.products?.name}</td>
+                <td>{row.product_variants?.products?.sku}</td>
+                <td>{row.product_variants?.barcode}</td>
+                <td>{row.product_variants?.size || "—"}</td>
+                <td>{row.product_variants?.color || "—"}</td>
+                <td className="font-bold">{row.quantity}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="muted mt-4 text-sm">
+        الجرد الافتتاحي واعتماد تسويات فروق المخزون من صلاحية Admin فقط.
+      </p>
+    </Shell>
+  );
+}
