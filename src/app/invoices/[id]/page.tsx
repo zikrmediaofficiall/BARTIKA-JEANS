@@ -29,8 +29,8 @@ export default async function InvoiceDetail({
   if (!sale) notFound();
 
   const [
-    { data: items },
-    { data: payments },
+    { data: items, error: itemsError },
+    { data: payments, error: paymentsError },
     { data: storeSettings, error: storeSettingsError },
   ] = await Promise.all([
     supabase
@@ -50,7 +50,14 @@ export default async function InvoiceDetail({
       .maybeSingle(),
   ]);
 
-  const [{ data: onlinePayments }, { data: onlineRefunds }] = sale.source_online_order_id
+  if (itemsError || paymentsError || storeSettingsError) {
+    throw new Error(
+      "تعذر تحميل تفاصيل الفاتورة: " +
+        (itemsError?.message || paymentsError?.message || storeSettingsError?.message),
+    );
+  }
+
+  const [{ data: onlinePayments, error: onlinePaymentsError }, { data: onlineRefunds, error: onlineRefundsError }] = sale.source_online_order_id
     ? await Promise.all([
         supabase
           .from("online_order_payments")
@@ -63,10 +70,14 @@ export default async function InvoiceDetail({
           .eq("order_id", sale.source_online_order_id)
           .order("created_at", { ascending: true }),
       ])
-    : [{ data: [] }, { data: [] }];
+    : [{ data: [], error: null }, { data: [], error: null }];
 
-  const relatedError = items === null || payments === null ? null : null;
-  if (storeSettingsError) throw new Error("تعذر تحميل إعدادات الفاتورة: " + storeSettingsError.message);
+  if (onlinePaymentsError || onlineRefundsError) {
+    throw new Error(
+      "تعذر تحميل سجل تحصيل/رد الطلب: " +
+        (onlinePaymentsError?.message || onlineRefundsError?.message),
+    );
+  }
   const storeName = storeSettings?.store_name || "BARTIKA JEANS";
   const storeNameAr = storeSettings?.store_name_ar || "بارتيكا جينز";
   const logoUrl =
