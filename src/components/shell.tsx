@@ -69,7 +69,7 @@ export function Shell({
           </div>
         </div>
         <nav className="grid grid-cols-2 gap-2 md:grid-cols-1">
-          {links.map(([href, label, Icon]) => (
+          {links.filter(([href]) => href !== "/online-orders" || role === "admin").map(([href, label, Icon]) => (
             <Link
               key={href}
               href={href}
