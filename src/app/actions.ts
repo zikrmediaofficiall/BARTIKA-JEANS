@@ -626,6 +626,68 @@ export async function setOnlineOrderStatus(formData: FormData) {
   revalidatePath("/inventory");
 }
 
+export async function recordOnlineOrderPayment(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const orderId = String(formData.get("order_id") || "");
+  const amount = Number(formData.get("amount"));
+  const method = z.enum(["cash", "instapay", "visa"]).parse(String(formData.get("method") || ""));
+  const reference = String(formData.get("reference") || "").trim();
+  const cashSessionId = String(formData.get("cash_session_id") || "").trim();
+  const idempotencyKey = String(formData.get("idempotency_key") || "");
+
+  if (!z.string().uuid().safeParse(orderId).success) throw new Error("رقم الطلب غير صحيح");
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("قيمة التحصيل غير صحيحة");
+  if (!z.string().uuid().safeParse(idempotencyKey).success) throw new Error("معرف التحصيل غير صالح");
+  if (method !== "cash" && reference.length < 3) throw new Error("مرجع التحويل أو الفيزا مطلوب");
+  if (cashSessionId && (!z.string().uuid().safeParse(cashSessionId).success || method !== "cash")) {
+    throw new Error("درج النقدية المحدد غير صالح");
+  }
+
+  const { error } = await supabase.rpc("record_online_order_payment", {
+    p_order_id: orderId,
+    p_amount: amount,
+    p_method: method,
+    p_reference: reference,
+    ...(cashSessionId ? { p_cash_session_id: cashSessionId } : {}),
+    p_idempotency_key: idempotencyKey,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/online-orders");
+  revalidatePath("/cash");
+  revalidatePath("/reports");
+}
+
+export async function recordOnlineOrderRefund(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const orderId = String(formData.get("order_id") || "");
+  const amount = Number(formData.get("amount"));
+  const method = z.enum(["cash", "instapay", "visa"]).parse(String(formData.get("method") || ""));
+  const reference = String(formData.get("reference") || "").trim();
+  const cashSessionId = String(formData.get("cash_session_id") || "").trim();
+  const idempotencyKey = String(formData.get("idempotency_key") || "");
+
+  if (!z.string().uuid().safeParse(orderId).success) throw new Error("رقم الطلب غير صحيح");
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("قيمة الرد غير صحيحة");
+  if (!z.string().uuid().safeParse(idempotencyKey).success) throw new Error("معرف الرد غير صالح");
+  if (method !== "cash" && reference.length < 3) throw new Error("مرجع رد التحويل مطلوب");
+  if (cashSessionId && (!z.string().uuid().safeParse(cashSessionId).success || method !== "cash")) {
+    throw new Error("درج النقدية المحدد غير صالح");
+  }
+
+  const { error } = await supabase.rpc("record_online_order_refund", {
+    p_order_id: orderId,
+    p_amount: amount,
+    p_method: method,
+    p_reference: reference,
+    ...(cashSessionId ? { p_cash_session_id: cashSessionId } : {}),
+    p_idempotency_key: idempotencyKey,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/online-orders");
+  revalidatePath("/cash");
+  revalidatePath("/reports");
+}
+
 export async function startStocktake(formData: FormData) {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase.rpc("start_stocktake", {
