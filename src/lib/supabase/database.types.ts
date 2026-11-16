@@ -1602,8 +1602,8 @@ export type Database = {
       record_online_order_payment: {
         Args: {
           p_amount: number
-          p_cash_session_id: string
-          p_idempotency_key: string
+          p_cash_session_id?: string
+          p_idempotency_key?: string
           p_method: Database["public"]["Enums"]["payment_method"]
           p_order_id: string
           p_reference: string
@@ -1613,8 +1613,8 @@ export type Database = {
       record_online_order_refund: {
         Args: {
           p_amount: number
-          p_cash_session_id: string
-          p_idempotency_key: string
+          p_cash_session_id?: string
+          p_idempotency_key?: string
           p_method: Database["public"]["Enums"]["payment_method"]
           p_order_id: string
           p_reference: string
