@@ -57,6 +57,9 @@ alter table public.online_orders
   add column if not exists total numeric(12,2)
   generated always as (subtotal + shipping_amount) stored;
 
+update public.online_orders
+set due = greatest(0, subtotal + shipping_amount - paid);
+
 alter table public.sales
   add column if not exists shipping_amount numeric(12,2) not null default 0
   check (shipping_amount >= 0);
