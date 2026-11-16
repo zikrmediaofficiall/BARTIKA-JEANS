@@ -1,0 +1,99 @@
+name: BARTIKA Windows Desktop
+
+on:
+  pull_request:
+    paths:
+      - "desktop/windows/**"
+      - ".github/workflows/windows-desktop.yml"
+  push:
+    branches: [main]
+    paths:
+      - "desktop/windows/**"
+      - ".github/workflows/windows-desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bartika-windows-desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install desktop packaging dependencies
+        working-directory: desktop/windows
+        run: npm install --no-audit --no-fund
+
+      - name: Check desktop launcher syntax
+        working-directory: desktop/windows
+        run: node --check main.cjs
+
+      - name: Build universal Windows installer (x64 + ia32)
+        working-directory: desktop/windows
+        run: npm run dist:win
+
+      - name: Verify installer output
+        shell: pwsh
+        working-directory: desktop/windows
+        run: |
+          $files = Get-ChildItem -Path "dist" -Filter "*.exe" -File
+          $files | Format-Table Name, Length
+          if ($files.Count -lt 1) {
+            throw "Expected the combined x64/ia32 Windows installer executable."
+          }
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: bartika-windows-installer-${{ github.sha }}
+          path: desktop/windows/dist/*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-release:
+    if: >-
+      ${{ needs.build-windows.result == 'success' &&
+          ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+           (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')) }}
+    needs: build-windows
+    runs-on: windows-2022
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout exact tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: bartika-windows-installer-${{ github.sha }}
+          path: release-files
+
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.sha }}
+          RUN_NUMBER: ${{ github.run_number }}
+        shell: pwsh
+        run: |
+          $tag = "v1.0.0-win7-legacy.$env:RUN_NUMBER"
+          $files = Get-ChildItem -Path "release-files" -Filter "*.exe" -File
+          if ($files.Count -lt 1) {
+            throw "Windows installer is missing; refusing to publish."
+          }
+          gh release create $tag $files.FullName --target $env:TARGET_SHA --title "BARTIKA JEANS Windows 7 Legacy $env:RUN_NUMBER" --prerelease --notes "Legacy Windows 7 compatibility build. This uses Electron 22 / Chromium 108, which no longer receives security updates. Windows 7 has also reached end of security support. Testing/compatibility only; do not use for real customer, sales, or credential data. The combined installer supports x64 and ia32. Requires internet for normal use; offline remains limited to the existing cached POS workflow."

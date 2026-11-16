@@ -1,0 +1,36 @@
+{
+  "name": "bartika-jeans-windows",
+  "version": "1.0.0-legacy.1",
+  "private": true,
+  "description": "Legacy Windows desktop launcher for BARTIKA JEANS",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis --x64 --ia32 --publish never"
+  },
+  "devDependencies": {
+    "electron": "22.3.27",
+    "electron-builder": "24.13.3"
+  },
+  "build": {
+    "appId": "com.bartika.jeans.desktop",
+    "productName": "BARTIKA JEANS",
+    "directories": { "output": "dist" },
+    "files": ["main.cjs", "offline.html", "package.json"],
+    "asar": true,
+    "compression": "normal",
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64", "ia32"] }],
+      "artifactName": "BARTIKA-JEANS-${version}-Windows-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BARTIKA JEANS",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
