@@ -24,7 +24,7 @@ concurrency:
 jobs:
   build-windows:
     runs-on: windows-2022
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -109,10 +109,10 @@ jobs:
           if ($null -eq $installer -or $null -eq $checksum) {
             throw "Installer or SHA-256 file missing; refusing to publish."
           }
-          $line = Get-Content $checksum.FullName
-          $expected = ($line -split "\\s+")[0].ToLowerInvariant()
+          $line = Get-Content $checksum.FullName | Select-Object -First 1
+          $expected = $line.Substring(0, 64).ToLowerInvariant()
           $actual = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLowerInvariant()
           if ($expected -ne $actual) {
             throw "SHA-256 mismatch before release upload."
           }
-          gh release create $tag $files.FullName --target $env:TARGET_SHA --title "BARTIKA JEANS Windows 7 Legacy 2 — Startup Fix $env:RUN_NUMBER" --prerelease --notes "Startup fix release for Windows 7 compatibility. Shows a local startup screen before network navigation, disables GPU acceleration for old graphics drivers, adds a 30-second connection fallback, and records startup/renderer errors to a local log. Includes installer, SHA256SUMS.txt, Arabic installation and troubleshooting guides. Electron 22 / Chromium 108 is end-of-life and Windows 7 is unsupported by Microsoft; this remains a testing/compatibility build only, not for real customer, sales, or credential data. Requires internet for normal use; offline remains limited to the existing cached POS workflow."
+          gh release create $tag $files.FullName --target $env:TARGET_SHA --title "BARTIKA JEANS Windows 7 Legacy 2 — Startup Fix $env:RUN_NUMBER" --prerelease --notes "Startup fix release for Windows 7 compatibility. Shows a local startup screen before network navigation, disables GPU acceleration for old graphics drivers, adds a 30-second connection fallback, and records startup/renderer errors to a local log. Includes installer, SHA256SUMS.txt, Arabic installation guide, and Arabic troubleshooting guide. Electron 22 / Chromium 108 is end-of-life and Windows 7 is unsupported by Microsoft; this remains a testing/compatibility build only, not for real customer, sales, or credential data. Requires internet for normal use; offline remains limited to the existing cached POS workflow."
