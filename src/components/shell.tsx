@@ -75,7 +75,7 @@ export function Shell({
           </div>
         </div>
         <nav className="grid grid-cols-2 gap-2 md:grid-cols-1">
-          {links.filter(([href]) => (href !== "/online-orders" || role === "admin") && (href !== "/barcodes" || role === "admin") && (href !== "/qr" || role === "admin") && (href !== "/shipping" || role === "admin")).map(([href, label, Icon]) => (
+          {links.filter(([href]) => !["/products", "/online-orders", "/barcodes", "/qr", "/shipping", "/staff", "/settings"].includes(href) || role === "admin").map(([href, label, Icon]) => (
             <Link
               key={href}
               href={href}

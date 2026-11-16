@@ -34,7 +34,7 @@ const storeSettingsSchema = z.object({
   instapay_ipa: z.string().trim().max(120),
   instapay_url: z.union([z.literal(""), z.string().url()]),
   exchange_days: z.coerce.number().int().min(0).max(30),
-  quick_discount_percent: z.coerce.number().finite().min(0).max(100),
+  quick_discount_percent: z.coerce.number().finite().min(0).max(20),
 });
 
 export async function updateStoreSettings(formData: FormData) {
@@ -198,14 +198,14 @@ const saleSchema = z.object({
       variant_id: z.string().uuid(),
       quantity: z.number().int().positive(),
     }),
-  ).min(1),
+  ).min(1).max(100),
   payments: z.array(
     z.object({
       method: z.enum(["cash", "instapay", "visa"]),
       amount: z.number().finite().positive(),
-      reference: z.string().optional(),
+      reference: z.string().max(120).optional(),
     }),
-  ),
+  ).max(10),
   discount_percent: z.number().finite().min(0).max(100),
   customer_phone: z.string().trim().optional(),
 });
@@ -233,7 +233,8 @@ export async function checkoutSale(input: unknown) {
 const managerPermissionKeys = [
   "dashboard.read",
   "sales.read_all",
-    "purchases.read",
+  "inventory.read",
+  "purchases.read",
   "stocktake.read",
   "cash.read_all",
   "expenses.read",

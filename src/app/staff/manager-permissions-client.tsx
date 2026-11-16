@@ -13,8 +13,6 @@ const permissionOptions = [
   ["customers.read", "عرض ملفات العملاء"],
   ["staff.read", "عرض بيانات الموظفين"],
   ["exchanges.read", "عرض عمليات الاستبدال"],
-  ["orders.read", "عرض الطلبات الإلكترونية"],
-  ["orders.manage", "إدارة الطلبات الإلكترونية"],
   ["reports.read", "عرض التقارير"],
 ] as const;
 

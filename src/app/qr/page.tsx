@@ -1,14 +1,11 @@
-import { redirect } from "next/navigation";
-import { getSessionContext } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { QrGallery, type QrEntry } from "@/components/qr-gallery";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bartika-jeans.vercel.app";
 
 export default async function QrPage() {
-  const { supabase, user, profile } = await getSessionContext();
-  if (!user) redirect("/login");
-  if (profile?.role !== "admin") redirect("/");
+  const { supabase, user } = await requireAdmin();
 
   const { data: settings, error } = await supabase
     .from("store_settings")

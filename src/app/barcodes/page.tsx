@@ -1,12 +1,9 @@
-import { redirect } from "next/navigation";
-import { getSessionContext } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { BarcodeLabels, type BarcodeLabelItem } from "@/components/barcode-labels";
 
 export default async function BarcodesPage() {
-  const { supabase, user, profile } = await getSessionContext();
-  if (!user) redirect("/login");
-  if (profile?.role !== "admin") redirect("/");
+  const { supabase, user } = await requireAdmin();
 
   const { data, error } = await supabase
     .from("products")

@@ -23,6 +23,8 @@ export default async function Home({
     supabase.from("products").select("id",{count:"exact",head:true}).eq("is_active",true),
     supabase.from("inventory").select("quantity"),
   ]);
+  const queryError = sales.error || products.error || stock.error;
+  if (queryError) throw new Error("تعذر تحميل مؤشرات لوحة التحكم: " + queryError.message);
   const total = (sales.data || []).reduce((sum,row)=>sum+Number(row.total),0);
   const quantity = (stock.data || []).reduce((sum,row)=>sum+Number(row.quantity),0);
   const money = new Intl.NumberFormat("ar-EG",{style:"currency",currency:"EGP",maximumFractionDigits:2}).format(total);

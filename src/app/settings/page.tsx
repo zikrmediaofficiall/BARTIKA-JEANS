@@ -1,13 +1,10 @@
 import Image from "next/image";
-import { redirect } from "next/navigation";
 import { updateStoreSettings } from "@/app/actions";
-import { getSessionContext } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 
 export default async function Settings() {
-  const { supabase, user, profile } = await getSessionContext();
-  if (!user) redirect("/login");
-  if (profile?.role !== "admin") redirect("/");
+  const { supabase, user } = await requireAdmin();
 
   const { data: settings, error } = await supabase
     .from("store_settings")
@@ -109,7 +106,7 @@ export default async function Settings() {
           </label>
           <label className="block text-sm font-bold">
             الخصم السريع الافتراضي (%)
-            <input className="field mt-2" name="quick_discount_percent" type="number" min="0" max="100" step="0.01" defaultValue={settings.quick_discount_percent} required />
+            <input className="field mt-2" name="quick_discount_percent" type="number" min="0" max="20" step="0.01" defaultValue={settings.quick_discount_percent} required />
           </label>
           <p className="muted text-xs leading-6 sm:col-span-2">
             مدة الاستبدال الطوعي لا تنتقص من الحقوق القانونية للمستهلك في حالة العيب أو عدم المطابقة. حدود خصم الموظفين الفردية تُدار من شاشة الموظفين وتتحقق منها قاعدة البيانات.

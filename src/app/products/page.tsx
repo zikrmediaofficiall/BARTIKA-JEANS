@@ -1,14 +1,11 @@
-import { redirect } from "next/navigation";
-import { getSessionContext } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { addProduct } from "@/app/actions";
 import { CloudinaryProductImage } from "@/components/cloudinary-product-image";
 import { ProductVariantsEditor } from "./product-variants-editor";
 
 export default async function Products() {
-  const { supabase, user, profile } = await getSessionContext();
-  if (!user) redirect("/login");
-  if (profile?.role !== "admin") redirect("/");
+  const { supabase, user } = await requireAdmin();
 
   const { data, error } = await supabase
     .from("products")
