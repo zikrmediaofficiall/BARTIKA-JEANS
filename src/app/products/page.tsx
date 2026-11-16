@@ -3,6 +3,7 @@ import { getSessionContext } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { addProduct } from "@/app/actions";
 import { CloudinaryProductImage } from "@/components/cloudinary-product-image";
+import { ProductVariantsEditor } from "./product-variants-editor";
 
 export default async function Products() {
   const { supabase, user, profile } = await getSessionContext();
@@ -30,14 +31,7 @@ export default async function Products() {
         </h3>
         <input className="field" name="name" placeholder="اسم الصنف" required />
         <input className="field" name="sku" placeholder="كود SKU" required />
-        <input
-          className="field"
-          name="barcode"
-          placeholder="باركود يدوي (اتركه فارغًا للتوليد التلقائي)"
-        />
         <input className="field" name="category" placeholder="القسم" />
-        <input className="field" name="size" placeholder="المقاس" />
-        <input className="field" name="color" placeholder="اللون" />
         <label className="text-sm">
           سعر التكلفة / الشراء
           <input
@@ -62,17 +56,7 @@ export default async function Products() {
             required
           />
         </label>
-        <label className="text-sm">
-          الكمية الافتتاحية
-          <input
-            className="field mt-1"
-            name="qty"
-            type="number"
-            min="0"
-            placeholder="الكمية"
-            required
-          />
-        </label>
+        <ProductVariantsEditor />
         <CloudinaryProductImage />
         <button className="btn btn-primary self-end">حفظ الصنف</button>
       </form>
