@@ -463,6 +463,7 @@ export type Database = {
       }
       online_order_items: {
         Row: {
+          barcode_snapshot: string
           color_snapshot: string | null
           created_at: string
           id: string
@@ -472,10 +473,12 @@ export type Database = {
           product_name_snapshot: string
           quantity: number
           size_snapshot: string | null
+          unit_cost_snapshot: number | null
           unit_price: number
           variant_id: string
         }
         Insert: {
+          barcode_snapshot?: string
           color_snapshot?: string | null
           created_at?: string
           id?: string
@@ -485,10 +488,12 @@ export type Database = {
           product_name_snapshot: string
           quantity: number
           size_snapshot?: string | null
+          unit_cost_snapshot?: number | null
           unit_price: number
           variant_id: string
         }
         Update: {
+          barcode_snapshot?: string
           color_snapshot?: string | null
           created_at?: string
           id?: string
@@ -498,6 +503,7 @@ export type Database = {
           product_name_snapshot?: string
           quantity?: number
           size_snapshot?: string | null
+          unit_cost_snapshot?: number | null
           unit_price?: number
           variant_id?: string
         }
@@ -525,6 +531,122 @@ export type Database = {
           },
         ]
       }
+      online_order_payments: {
+        Row: {
+          amount: number
+          cash_session_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          idempotency_key: string
+          order_id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          idempotency_key: string
+          order_id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          idempotency_key?: string
+          order_id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_order_payments_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_order_payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_order_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "online_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      online_order_refunds: {
+        Row: {
+          amount: number
+          cash_session_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          idempotency_key: string
+          order_id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          idempotency_key: string
+          order_id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          idempotency_key?: string
+          order_id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_order_refunds_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_order_refunds_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_order_refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "online_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       online_orders: {
         Row: {
           created_at: string
@@ -533,9 +655,12 @@ export type Database = {
           customer_phone: string
           delivery_address: string | null
           delivery_method: string
+          due: number
           id: string
           idempotency_key: string
           order_number: number
+          paid: number
+          payment_status: string
           status: string
           subtotal: number
           updated_at: string
@@ -547,9 +672,12 @@ export type Database = {
           customer_phone: string
           delivery_address?: string | null
           delivery_method: string
+          due?: number
           id?: string
           idempotency_key: string
           order_number?: number
+          paid?: number
+          payment_status?: string
           status?: string
           subtotal: number
           updated_at?: string
@@ -561,9 +689,12 @@ export type Database = {
           customer_phone?: string
           delivery_address?: string | null
           delivery_method?: string
+          due?: number
           id?: string
           idempotency_key?: string
           order_number?: number
+          paid?: number
+          payment_status?: string
           status?: string
           subtotal?: number
           updated_at?: string
@@ -950,6 +1081,7 @@ export type Database = {
           invoice_number: number
           paid: number
           seller_id: string
+          source_online_order_id: string | null
           status: Database["public"]["Enums"]["sale_status"]
           subtotal: number
           total: number
@@ -966,6 +1098,7 @@ export type Database = {
           invoice_number?: never
           paid?: number
           seller_id: string
+          source_online_order_id?: string | null
           status?: Database["public"]["Enums"]["sale_status"]
           subtotal: number
           total: number
@@ -982,6 +1115,7 @@ export type Database = {
           invoice_number?: never
           paid?: number
           seller_id?: string
+          source_online_order_id?: string | null
           status?: Database["public"]["Enums"]["sale_status"]
           subtotal?: number
           total?: number
@@ -1006,6 +1140,13 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_source_online_order_id_fkey"
+            columns: ["source_online_order_id"]
+            isOneToOne: false
+            referencedRelation: "online_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -1455,6 +1596,28 @@ export type Database = {
           p_paid?: number
           p_reference: string
           p_supplier_id: string
+        }
+        Returns: Json
+      }
+      record_online_order_payment: {
+        Args: {
+          p_amount: number
+          p_cash_session_id?: string
+          p_idempotency_key?: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_order_id: string
+          p_reference: string
+        }
+        Returns: Json
+      }
+      record_online_order_refund: {
+        Args: {
+          p_amount: number
+          p_cash_session_id?: string
+          p_idempotency_key?: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_order_id: string
+          p_reference: string
         }
         Returns: Json
       }
