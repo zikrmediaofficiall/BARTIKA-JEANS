@@ -57,7 +57,7 @@ export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
     setCart((current) => {
       const existing = current.find((line) => line.variant_id === row.variant_id);
       if (existing) {
-        if (existing.quantity >= row.available_quantity) return current;
+        if (existing.quantity >= Math.min(row.available_quantity, 5)) return current;
         return current.map((line) =>
           line.variant_id === row.variant_id
             ? { ...line, quantity: line.quantity + 1 }
@@ -82,7 +82,7 @@ export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
       return;
     }
     const row = catalog.find((item) => item.variant_id === variantId);
-    if (!row || quantity > row.available_quantity) return;
+    if (!row || quantity > Math.min(row.available_quantity, 5)) return;
     setCart((current) => current.map((line) =>
       line.variant_id === variantId ? { ...line, quantity } : line,
     ));
@@ -118,7 +118,9 @@ export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
                       <div className="text-xs">
                         <b>{variant.size || "مقاس موحد"}</b>
                         {variant.color ? <span className="muted"> · {variant.color}</span> : null}
-                        <p className="muted mt-1">متاح: {variant.available_quantity}</p>
+                        <p className="muted mt-1">
+                          {variant.available_quantity >= 5 ? "متاح 5+" : "متاح " + variant.available_quantity}
+                        </p>
                       </div>
                       <button
                         type="button"
@@ -197,7 +199,7 @@ export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
           </label>
           <button className="btn btn-primary w-full" disabled={!cart.length}>إرسال طلب الشراء</button>
           <p className="muted text-[11px] leading-5">
-            الطلب لا يُعد مدفوعًا أو نهائيًا حتى يتواصل المتجر معك ويؤكد التوفر والتوصيل. يتم حجز الكميات مؤقتًا لحين مراجعة الطلب.
+            الإجمالي قيمة المنتجات فقط، ومصاريف التوصيل يؤكدها المتجر عند التواصل. الطلب غير مدفوع حتى يسجل Admin التحصيل بعد التحقق الفعلي. يتم حجز المقاسات 24 ساعة؛ والطلب غير المدفوع يُلغى تلقائيًا بعد انتهاء المدة وتعود الكمية للمخزون.
           </p>
         </form>
       </aside>
