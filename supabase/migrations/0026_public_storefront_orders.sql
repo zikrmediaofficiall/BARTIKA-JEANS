@@ -88,7 +88,7 @@ as $$
     v.id,
     v.size,
     v.color,
-    greatest(0, coalesce(i.quantity, 0) - coalesce(i.reserved_quantity, 0))
+    least(5, greatest(0, coalesce(i.quantity, 0) - coalesce(i.reserved_quantity, 0)))
   from public.products p
   join public.product_variants v on v.product_id = p.id
   left join public.inventory i on i.variant_id = v.id
