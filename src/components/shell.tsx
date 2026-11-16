@@ -15,12 +15,14 @@ import {
   ClipboardCheck,
   Truck,
   Wallet,
+  ScanLine,
 } from "lucide-react";
 
 const links = [
   ["/", "الرئيسية", LayoutDashboard],
   ["/pos", "الكاشير", ShoppingCart],
   ["/products", "المنتجات", Package],
+  ["/barcodes", "الباركود والملصقات", ScanLine],
   ["/inventory", "المخزون والجرد", Warehouse],
   ["/purchases", "المشتريات", Truck],
   ["/online-orders", "طلبات المتجر", ShoppingBag],
