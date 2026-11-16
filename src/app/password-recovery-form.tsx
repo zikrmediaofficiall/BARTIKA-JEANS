@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export function PasswordRecoveryForm({ code }: { code: string }) {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
   const started = useRef(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -19,19 +19,25 @@ export function PasswordRecoveryForm({ code }: { code: string }) {
     started.current = true;
     let active = true;
 
-    supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
-      if (!active) return;
-      if (exchangeError) {
-        setError("رابط الاستعادة غير صالح أو انتهت صلاحيته. اطلب رسالة استعادة جديدة.");
-        return;
-      }
-      setReady(true);
-    }).catch(() => {
-      if (active) setError("تعذر التحقق من رابط الاستعادة. اطلب رسالة جديدة وحاول مرة أخرى.");
-    });
+    try {
+      const supabase = createClient();
+      supabaseRef.current = supabase;
+      supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
+        if (!active) return;
+        if (exchangeError) {
+          setError("رابط الاستعادة غير صالح أو انتهت صلاحيته. اطلب رسالة استعادة جديدة.");
+          return;
+        }
+        setReady(true);
+      }).catch(() => {
+        if (active) setError("تعذر التحقق من رابط الاستعادة. اطلب رسالة جديدة وحاول مرة أخرى.");
+      });
+    } catch {
+      setError("تعذر تهيئة جلسة الاستعادة. افتح الرابط في نفس المتصفح الذي طلبت منه الرسالة.");
+    }
 
     return () => { active = false; };
-  }, [code, supabase]);
+  }, [code]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,6 +48,12 @@ export function PasswordRecoveryForm({ code }: { code: string }) {
     }
     if (password !== confirmPassword) {
       setError("تأكيد كلمة المرور غير مطابق.");
+      return;
+    }
+
+    const supabase = supabaseRef.current;
+    if (!supabase) {
+      setError("انتهت جلسة الاستعادة. اطلب رسالة جديدة.");
       return;
     }
 
