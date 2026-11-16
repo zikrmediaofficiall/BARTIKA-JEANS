@@ -15,7 +15,7 @@ begin
  if s.seller_id<>auth.uid() and not public.is_admin() then raise exception 'غير مصرح';end if;
  if s.status<>'open' then raise exception 'الوردية مغلقة بالفعل';end if;
  select coalesce(sum(p.amount),0) into v_sales from public.payments p join public.sales x on x.id=p.sale_id where x.seller_id=s.seller_id and x.created_at>=s.opened_at and x.created_at<=now() and x.status='completed' and p.method='cash';
- select coalesce(sum(e.amount),0) into v_expenses from public.expenses e where e.created_by=s.seller_id and e.created_at>=s.opened_at and e.created_at<=now() and e.payment_method='cash';
+ select coalesce(sum(e.amount),0) into v_expenses from public.expenses e where e.created_at>=s.opened_at and e.created_at<=now() and e.payment_method='cash';
  v_expected:=s.opening_cash+v_sales-v_expenses;
  update public.cash_sessions set expected_cash=v_expected,counted_cash=p_counted_cash,variance=p_counted_cash-v_expected,status='closed',closed_at=now() where id=p_session_id;
  insert into public.audit_logs(actor_id,action,entity_type,entity_id,details) values(auth.uid(),'close_cash_session','cash_session',p_session_id,jsonb_build_object('expected',v_expected,'counted',p_counted_cash,'variance',p_counted_cash-v_expected));
