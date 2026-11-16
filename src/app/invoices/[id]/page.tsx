@@ -158,6 +158,12 @@ export default async function InvoiceDetail({
             <span>الخصم</span>
             <b>{fmt(Number(sale.discount_amount))}</b>
           </p>
+          {Number(sale.shipping_amount || 0) > 0 ? (
+            <p className="flex justify-between">
+              <span>الشحن</span>
+              <b>{fmt(Number(sale.shipping_amount))}</b>
+            </p>
+          ) : null}
           <p className="flex justify-between border-t pt-2 text-lg">
             <span>الصافي</span>
             <b>{fmt(Number(sale.total))}</b>
