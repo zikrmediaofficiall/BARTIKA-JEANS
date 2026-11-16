@@ -54,7 +54,14 @@ where id = (
 - `bartika-jeans/inventory`
 - `bartika-jeans/general`
 
-رفع الصور موقّع من الخادم ويتطلب جلسة Admin. يقبل JPG وPNG وWebP حتى 10 ميجابايت. النطاق الحالي المستخدم في الروابط هو `res.cloudinary.com`.
+تم رفع شعار BARTIKA المرفق إلى:
+
+- Public ID: `bartika-jeans/general/bartika-brand-logo`
+- Secure URL: `https://res.cloudinary.com/dcuveyab9/image/upload/v1794812757/bartika-jeans/general/bartika-brand-logo.webp`
+
+تم حفظ الرابط في `store_settings.logo_url` واستخدامه في القائمة الجانبية وصفحة تسجيل الدخول. مجلد المنتجات لا يحتوي صور منتجات فعلية حتى الآن.
+
+رفع صور المنتجات موقّع من الخادم ويتطلب جلسة Admin. يقبل JPG وPNG وWebP حتى 10 ميجابايت. النطاق الحالي المستخدم في الروابط هو `res.cloudinary.com`.
 
 > هذه المجلدات تعزل ملفات BARTIKA تنظيميًا عن ملفات ZIKR داخل حساب Cloudinary المتصل، لكنها ليست Product Environment أو حساب Cloudinary مستقلًا. يلزم ربط Cloudinary مستقل عند توفر حساب/بيئة مخصصة مستقلة.
 
