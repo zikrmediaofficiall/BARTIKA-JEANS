@@ -295,21 +295,32 @@ export async function addExpense(formData: FormData) {
   const { supabase } = await requireAdmin();
   const cashSessionValue = String(formData.get("cash_session_id") || "").trim();
   const cashSessionId = cashSessionValue || null;
+  const method = z.enum(["cash", "instapay", "visa"]).parse(
+    String(formData.get("method") || "cash"),
+  );
 
   if (cashSessionId && !z.string().uuid().safeParse(cashSessionId).success) {
     throw new Error("اختيار الوردية غير صحيح");
   }
+  if (cashSessionId && method !== "cash") {
+    throw new Error("لا يمكن ربط مصروف InstaPay أو الفيزا بدرج الكاش");
+  }
 
-  const { error } = await supabase.rpc("add_expense", {
-    p_category: String(formData.get("category") || ""),
-    p_description: String(formData.get("description") || ""),
+  const common = {
+    p_category: String(formData.get("category") || "").trim(),
+    p_description: String(formData.get("description") || "").trim(),
     p_amount: Number(formData.get("amount")),
-    p_method: z.enum(["cash", "instapay", "visa"]).parse(
-      String(formData.get("method") || "cash"),
-    ),
-    ...(cashSessionId ? { p_cash_session_id: cashSessionId } : {}),
-  });
-  if (error) throw new Error(error.message);
+    p_method: method,
+  };
+
+  const result = cashSessionId
+    ? await supabase.rpc("add_expense", {
+        ...common,
+        p_cash_session_id: cashSessionId,
+      })
+    : await supabase.rpc("add_expense", common);
+
+  if (result.error) throw new Error(result.error.message);
   revalidatePath("/cash");
   revalidatePath("/reports");
 }
