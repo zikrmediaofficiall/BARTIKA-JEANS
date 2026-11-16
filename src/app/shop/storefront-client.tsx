@@ -15,6 +15,15 @@ type CatalogRow = {
   available_quantity: number;
 };
 
+type ShippingOption = {
+  shipping_company_id: string;
+  shipping_company_name: string;
+  shipping_zone_id: string;
+  shipping_zone_name: string;
+  fee: number;
+  free_shipping_threshold: number | null;
+};
+
 type CartLine = {
   variant_id: string;
   product_name: string;
@@ -25,9 +34,21 @@ type CartLine = {
   image_url: string | null;
 };
 
-export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
+export function StorefrontClient({
+  catalog,
+  shippingOptions,
+}: {
+  catalog: CatalogRow[];
+  shippingOptions: ShippingOption[];
+}) {
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">("delivery");
+  const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">(
+    shippingOptions.length ? "delivery" : "pickup",
+  );
+  const [shippingZoneId, setShippingZoneId] = useState(shippingOptions[0]?.shipping_zone_id || "");
+  const [paymentPreference, setPaymentPreference] = useState<"cod" | "instapay" | "visa" | "pickup_cash">(
+    shippingOptions.length ? "cod" : "pickup_cash",
+  );
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const products = useMemo(() => {
@@ -47,7 +68,14 @@ export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
     return Array.from(groups.values());
   }, [catalog]);
 
-  const total = cart.reduce((sum, line) => sum + line.unit_price * line.quantity, 0);
+  const subtotal = cart.reduce((sum, line) => sum + line.unit_price * line.quantity, 0);
+  const selectedZone = shippingOptions.find((option) => option.shipping_zone_id === shippingZoneId);
+  const shippingAmount = deliveryMethod === "delivery" && selectedZone
+    ? selectedZone.free_shipping_threshold !== null && subtotal >= Number(selectedZone.free_shipping_threshold)
+      ? 0
+      : Number(selectedZone.fee)
+    : 0;
+  const total = Math.round((subtotal + shippingAmount) * 100) / 100;
   const cartPayload = JSON.stringify(cart.map((line) => ({
     variant_id: line.variant_id,
     quantity: line.quantity,
@@ -88,6 +116,16 @@ export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
     ));
   }
 
+  function changeDeliveryMethod(value: "delivery" | "pickup") {
+    setDeliveryMethod(value);
+    if (value === "delivery") {
+      setPaymentPreference("cod");
+      setShippingZoneId(shippingOptions[0]?.shipping_zone_id || "");
+    } else {
+      setPaymentPreference("pickup_cash");
+    }
+  }
+
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[1fr_390px]">
       <section>
@@ -122,12 +160,7 @@ export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
                           {variant.available_quantity >= 5 ? "متاح 5+" : "متاح " + variant.available_quantity}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        className="btn btn-primary text-xs"
-                        onClick={() => add(variant)}
-                        disabled={variant.available_quantity <= 0}
-                      >
+                      <button type="button" className="btn btn-primary text-xs" onClick={() => add(variant)} disabled={variant.available_quantity <= 0}>
                         أضف للسلة
                       </button>
                     </div>
@@ -163,13 +196,12 @@ export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
           ))}
           {!cart.length ? <p className="muted py-4 text-center text-sm">السلة فارغة. أضف منتجًا للمتابعة.</p> : null}
         </div>
-        <div className="mb-4 flex items-center justify-between border-t pt-4">
-          <b>الإجمالي التقديري</b>
-          <b className="text-xl text-emerald-900">{total.toFixed(2)} ج.م</b>
-        </div>
+
         <form action={createOnlineOrder} className="space-y-3">
           <input type="hidden" name="items_json" value={cartPayload} />
           <input type="hidden" name="idempotency_key" value={idempotencyKey} />
+          <input type="hidden" name="shipping_zone_id" value={deliveryMethod === "delivery" ? shippingZoneId : ""} />
+
           <label className="block text-sm font-bold">
             الاسم
             <input className="field mt-1" name="customer_name" required minLength={2} maxLength={160} />
@@ -178,28 +210,77 @@ export function StorefrontClient({ catalog }: { catalog: CatalogRow[] }) {
             رقم الهاتف
             <input className="field mt-1" name="customer_phone" type="tel" dir="ltr" required maxLength={30} placeholder="01xxxxxxxxx" />
           </label>
+
           <label className="block text-sm font-bold">
             طريقة الاستلام
-            <select className="field mt-1" name="delivery_method" value={deliveryMethod} onChange={(event) => setDeliveryMethod(event.target.value as typeof deliveryMethod)}>
-              <option value="delivery">توصيل للعنوان</option>
+            <select className="field mt-1" name="delivery_method" value={deliveryMethod} onChange={(event) => changeDeliveryMethod(event.target.value as "delivery" | "pickup")}>
+              <option value="delivery" disabled={!shippingOptions.length}>توصيل للعنوان</option>
               <option value="pickup">استلام من الفرع</option>
             </select>
           </label>
+
           {deliveryMethod === "delivery" ? (
-            <label className="block text-sm font-bold">
-              عنوان التوصيل
-              <textarea className="field mt-1" name="delivery_address" required minLength={5} maxLength={500} rows={2} />
-            </label>
+            <>
+              <label className="block text-sm font-bold">
+                شركة الشحن والمنطقة
+                <select className="field mt-1" value={shippingZoneId} onChange={(event) => setShippingZoneId(event.target.value)} required>
+                  <option value="">اختر المنطقة وشركة الشحن</option>
+                  {shippingOptions.map((option) => (
+                    <option key={option.shipping_zone_id} value={option.shipping_zone_id}>
+                      {option.shipping_company_name} · {option.shipping_zone_name} · {Number(option.fee).toFixed(2)} ج.م
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {selectedZone?.free_shipping_threshold !== null && selectedZone?.free_shipping_threshold !== undefined ? (
+                <p className="rounded-lg bg-emerald-50 p-2 text-xs text-emerald-900">
+                  شحن مجاني عند وصول قيمة المنتجات إلى {Number(selectedZone.free_shipping_threshold).toFixed(2)} ج.م
+                </p>
+              ) : null}
+              <label className="block text-sm font-bold">
+                عنوان التوصيل
+                <textarea className="field mt-1" name="delivery_address" required minLength={5} maxLength={500} rows={2} />
+              </label>
+            </>
           ) : (
             <input type="hidden" name="delivery_address" value="" />
           )}
+
+          <label className="block text-sm font-bold">
+            طريقة الدفع المفضلة
+            <select className="field mt-1" name="payment_preference" value={paymentPreference} onChange={(event) => setPaymentPreference(event.target.value as typeof paymentPreference)}>
+              {deliveryMethod === "delivery" ? (
+                <>
+                  <option value="cod">الدفع عند الاستلام</option>
+                  <option value="instapay">InstaPay</option>
+                  <option value="visa">Visa</option>
+                </>
+              ) : (
+                <>
+                  <option value="pickup_cash">نقدًا عند الاستلام من الفرع</option>
+                  <option value="instapay">InstaPay</option>
+                  <option value="visa">Visa</option>
+                </>
+              )}
+            </select>
+          </label>
+
           <label className="block text-sm font-bold">
             ملاحظات (اختياري)
             <textarea className="field mt-1" name="customer_notes" rows={2} maxLength={500} />
           </label>
-          <button className="btn btn-primary w-full" disabled={!cart.length}>إرسال طلب الشراء</button>
+
+          <div className="rounded-xl border border-slate-100 p-3 text-sm">
+            <div className="flex justify-between"><span>قيمة المنتجات</span><b>{subtotal.toFixed(2)} ج.م</b></div>
+            <div className="mt-2 flex justify-between"><span>الشحن</span><b>{deliveryMethod === "pickup" ? "مجاني" : selectedZone ? (shippingAmount === 0 ? "مجاني" : shippingAmount.toFixed(2) + " ج.م") : "اختر المنطقة"}</b></div>
+            <div className="mt-3 flex justify-between border-t pt-3 text-base"><b>الإجمالي شامل الشحن</b><b className="text-lg text-emerald-900">{total.toFixed(2)} ج.م</b></div>
+          </div>
+
+          <button className="btn btn-primary w-full" disabled={!cart.length || (deliveryMethod === "delivery" && !selectedZone)}>
+            إرسال طلب الشراء
+          </button>
           <p className="muted text-[11px] leading-5">
-            الإجمالي قيمة المنتجات فقط، ومصاريف التوصيل يؤكدها المتجر عند التواصل. الطلب غير مدفوع حتى يسجل Admin التحصيل بعد التحقق الفعلي. يتم حجز المقاسات 24 ساعة؛ والطلب غير المدفوع يُلغى تلقائيًا بعد انتهاء المدة وتعود الكمية للمخزون.
+            رسوم الشحن تظهر قبل تأكيد الطلب وتُحسب نهائيًا على الخادم. اختيار InstaPay أو Visa يسجل تفضيل الدفع فقط؛ لا يُعد التحويل أو الدفع مؤكدًا حتى يراجعه المتجر. الطلب غير مدفوع حتى يسجل Admin التحصيل بعد التحقق الفعلي. يتم حجز المقاسات 24 ساعة؛ والطلب غير المدفوع يُلغى تلقائيًا بعد انتهاء المدة وتعود الكمية للمخزون.
           </p>
         </form>
       </aside>
