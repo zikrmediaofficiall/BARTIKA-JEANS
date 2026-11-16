@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { hasPermission, requireUser } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { openCashSession, closeCashSession, addExpense } from "@/app/actions";
