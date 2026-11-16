@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BARTIKA JEANS</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#000010;color:#f5f5f5;font-family:Tahoma,Arial,sans-serif}
+    main{width:min(92vw,620px);padding:36px;border:1px solid #26375f;border-radius:18px;background:#08132c;text-align:center}
+    h1{color:#f3d77b;letter-spacing:1px}
+    p{line-height:1.9;color:#d7deed}
+    .spinner{width:30px;height:30px;margin:20px auto;border:3px solid #35476d;border-top-color:#f3d77b;border-radius:50%;animation:spin 1s linear infinite}
+    a{display:inline-block;margin-top:12px;padding:12px 22px;border-radius:9px;background:#d9b95f;color:#101525;text-decoration:none;font-weight:700}
+    small{display:block;margin-top:20px;color:#9ba8c3}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>BARTIKA JEANS</h1>
+    <h2>جاري تشغيل البرنامج</h2>
+    <div class="spinner" aria-hidden="true"></div>
+    <p>يتم الآن فتح المتجر. ستظهر هذه الشاشة أولًا حتى لا يظل البرنامج مخفيًا أثناء انتظار الاتصال.</p>
+    <a href="https://bartika-jeans.vercel.app/">فتح المتجر الآن</a>
+    <small>نسخة سطح المكتب — Windows</small>
+  </main>
+</body>
+</html>
