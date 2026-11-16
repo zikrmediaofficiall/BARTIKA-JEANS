@@ -25,9 +25,9 @@ export default async function PublicLinksPage() {
       <div className="mx-auto max-w-md">
         <header className="mb-8 text-center">
           {store?.logo_url ? (
-            <Image src={store.logo_url} alt="BARTIKA JEANS" width={112} height={112} className="mx-auto mb-4 h-28 w-28 rounded-2xl object-cover" unoptimized />
+            <Image src={store.logo_url} alt="BARTIKA JEANS" width={112} height={112} className="brand-logo-frame mx-auto mb-4 h-28 w-28 rounded-2xl object-contain p-1" unoptimized />
           ) : (
-            <div className="mx-auto mb-4 grid h-24 w-24 place-items-center rounded-2xl border border-gold-400 text-4xl font-black text-gold-300">B</div>
+            <div className="brand-logo-frame mx-auto mb-4 grid h-24 w-24 place-items-center rounded-2xl text-4xl font-black text-gold-300">B</div>
           )}
           <h1 className="text-3xl font-black tracking-wider text-gold-300">{store?.store_name || "BARTIKA JEANS"}</h1>
           <p className="mt-2 text-sm text-emerald-100">تابعنا وتواصل معنا</p>
@@ -40,7 +40,7 @@ export default async function PublicLinksPage() {
             </Link>
           ))}
           {payment?.instapay_url ? (
-            <Link href={payment.instapay_url} target="_blank" rel="noreferrer" className="block rounded-xl bg-gold-400 px-5 py-4 text-center font-black text-emerald-950">
+            <Link href={payment.instapay_url} target="_blank" rel="noreferrer" className="block rounded-xl bg-gold-400 px-5 py-4 text-center font-black text-emerald-950 shadow-brand-gold">
               الدفع عبر InstaPay
               {payment.instapay_ipa ? <span className="mt-1 block text-xs font-normal" dir="ltr">{payment.instapay_ipa}</span> : null}
             </Link>

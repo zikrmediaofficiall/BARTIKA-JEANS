@@ -31,7 +31,7 @@
 
 - `CLOUDINARY_CLOUD_NAME` و`CLOUDINARY_API_KEY` موجودان في بيئات Production وPreview وDevelopment.
 - `CLOUDINARY_FOLDER_MODE=dynamic` مضبوط في البيئات الثلاث، ومتوافق مع مسار التوقيع الحالي في الكود.
-- فحص Vercel كشف أن `CLOUDINARY_API_SECRET` فارغ في Production؛ لا يمكن تأكيد رفع الصور حتى إدخال السر الحقيقي. راجع قيمته وأضفه كـSensitive/Secret إلى Production وPreview وDevelopment من لوحة Vercel.
+- تم التحقق من أن `CLOUDINARY_API_SECRET` موجود كقيمة مشفرة في Production وPreview وDevelopment؛ لا يتم كشف قيمته في السجلات أو Git.
 - لا تضع `CLOUDINARY_API_SECRET` في أي متغير يبدأ بـ`NEXT_PUBLIC_` أو في Git.
 
 بعد إدخال السر الحقيقي، أعد نشر Vercel ثم اختبر:
@@ -45,12 +45,14 @@
 
 - مجلدات العمل المتوقعة: `bartika-jeans/products` و`bartika-jeans/inventory` و`bartika-jeans/general`.
 - كود الرفع الموقّع موجود في `src/app/api/cloudinary/signature/route.ts` ويتطلب Admin.
-- شعار المتجر الحالي يشير إلى Cloud Name قديم (`dcuveyab9`). لا تغيّره قبل توفير ملف شعار معتمد ورفعه إلى حساب BARTIKA المعتمد.
+- الشعار الرسمي الجديد مرفوع إلى `bartika-jeans/general` باسم `bartika-brand-logo-2026`، ورابطه https://res.cloudinary.com/lnsnp6km/image/upload/v1794847704/bartika-brand-logo-2026.webp. تم تحديث `public.store_settings.logo_url` ومكونات الواجهة لاستخدامه.
 - هذه المجلدات تنظيم داخل الحساب وليست Product Environments مستقلة.
 
 ## قاعدة البيانات والترحيلات
 
-- ترحيلات BARTIKA من `0001` حتى `0045` موجودة في `supabase/migrations`، وآخرها `0045_close_cash_session_active_profile.sql`.
+- ترحيلات BARTIKA من `0001` حتى `0045` موجودة في `supabase/migrations`، وتمت إعادة تسمية ملفاتها لتبدأ بنفس الطوابع الزمنية ذات 14 رقمًا المسجلة في `supabase_migrations.schema_migrations`.
+- يوجد سجلّان تاريخيان للترحيل `0016_admin_financial_profit_reports` بإصدارين مختلفين، وقد تم التحقق أن SQL متطابق؛ ملفا الترحيل المحليان يحافظان على الإصدارين دون إعادة تشغيلهما على قاعدة الإنتاج.
+- لم يتم تعديل جدول تاريخ الترحيلات في قاعدة الإنتاج ولم يتم تنفيذ SQL قديم مجددًا.
 - تم التحقق من تفعيل RLS على كل جداول Schema `public` التي تم فحصها (32 جدولًا).
 - راجع `supabase_migrations.schema_migrations` قبل تشغيل أي ترحيل. لا تشغّل هذه الترحيلات على مشروع ZIKR.
 - جداول التشغيل فارغة حتى الآن: المنتجات والمقاسات والمبيعات والعملاء والطلبات وشركات الشحن ومناطق الشحن. يلزم إدخال بيانات المحل الفعلية قبل قبول اختبار تشغيل كامل.
@@ -90,7 +92,8 @@
 ## قائمة ما قبل التشغيل
 
 - [ ] تحويل GitHub repository إلى Private.
-- [ ] إدخال `CLOUDINARY_API_SECRET` الصحيح في بيئات Vercel الثلاث وإعادة النشر، ثم اختبار رفع صورة حقيقية.
+- [x] التحقق من سر Cloudinary في بيئات Vercel الثلاث وتحديث رابط الشعار الرسمي.
+- [ ] تنفيذ اختبار رفع صورة منتج فعلية من لوحة Admin بعد تسجيل الدخول.
 - [ ] تفعيل Custom SMTP وLeaked Password Protection.
 - [ ] إدخال رقم الهاتف والعنوان وسياسات المتجر المعتمدة.
 - [ ] إدخال المنتجات والمقاسات والألوان والباركود والأسعار والتكاليف الفعلية.

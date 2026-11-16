@@ -1,4 +1,4 @@
-const CACHE="bartika-static-v1";
-self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(["/manifest.json","/offline.html"])).catch(()=>{}));self.skipWaiting()});
+const CACHE="bartika-static-brand-v2";
+self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(["/manifest.json","/offline.html","/bartika-logo.svg"])).catch(()=>{}));self.skipWaiting()});
 self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
 self.addEventListener("fetch",event=>{const request=event.request;const url=new URL(request.url);if(request.method!=="GET"||url.origin!==self.location.origin)return;if(url.pathname.startsWith("/_next/static/")||url.pathname==="/manifest.json"||url.pathname==="/offline.html"){event.respondWith(caches.match(request).then(hit=>hit||fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy))}return response})));return}if(request.mode==="navigate"){event.respondWith(fetch(request).catch(()=>caches.match("/offline.html")));}});

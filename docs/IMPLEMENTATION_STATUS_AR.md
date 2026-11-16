@@ -13,6 +13,9 @@
 
 ## 2. الهوية وحساب الإدارة
 
+- الهوية المعتمدة: كحلي داكن جدًا `#000010`، أزرق ملكي `#0038C8`، وذهبي معدني `#D8AA3D` مع إضاءات ذهبية `#F8E888`؛ تم ضبط درجات Tailwind القديمة لتشير إلى لوحة BARTIKA الجديدة.
+- الشعار الرسمي هو الصورة التي زود بها المالك، مرفوعة إلى Cloudinary بالمعرّف `bartika-brand-logo-2026`، وتم ربط إعداد المتجر والواجهة وPWA بها.
+
 - حساب مالك مؤكد في Supabase Auth ومرتبط بصف واحد في `public.profiles`.
 - تم التحقق من البريد وتحديث الدور إلى `admin`، والحساب نشط وحد الخصم الإداري 100%.
 - كلمة المرور تدار عبر Supabase Auth ولا تحفظ في GitHub أو SQL أو هذه الوثيقة.
@@ -20,7 +23,7 @@
 
 ## 3. قاعدة البيانات
 
-حالة المشروع `ACTIVE_HEALTHY`، وآخر ترحيل مطبق هو `0044_shipping_order_fk_indexes`.
+حالة المشروع `ACTIVE_HEALTHY`، وآخر ترحيل مطبق هو `20261116145833` باسم `close_cash_session_requires_active_profile` (ترحيل محلي `0045`). تمت مواءمة أسماء ملفات الترحيل المحلية مع الطوابع الزمنية البعيدة ذات 14 رقمًا.
 
 آخر إحصاء مباشر:
 - Auth users: 1
@@ -34,7 +37,7 @@
 - Online orders: 0
 - Cash sessions: 0
 
-يوجد 32 جدولًا في `public`، وجميعها عليها RLS. لا تدخل بيانات اختبار أو مخزون افتراضي على أنها بيانات المحل.
+يوجد 32 جدولًا في `public`، وجميعها عليها RLS. سجل `0016_admin_financial_profit_reports` يحتوي إصدارين مختلفين بنفس SQL؛ تم الاحتفاظ بالاثنين كملفين محليين مؤرخين لتتطابق الملفات مع سجل القاعدة. لا تدخل بيانات اختبار أو مخزون افتراضي على أنها بيانات المحل.
 
 ## 4. الخدمات الخارجية
 
@@ -45,7 +48,7 @@
 - Production build وGitHub Actions نجحا على آخر Commit.
 - متغيرات Supabase العامة ومفاتيح الخادم موجودة في Production.
 - تمت إضافة `CLOUDINARY_CLOUD_NAME=lnsnp6km` إلى Production وPreview وDevelopment.
-- لم تُضف بعد `CLOUDINARY_API_KEY` أو `CLOUDINARY_API_SECRET` أو `CLOUDINARY_FOLDER_MODE`.
+- تم تأكيد وجود `CLOUDINARY_API_KEY` و`CLOUDINARY_API_SECRET` و`CLOUDINARY_FOLDER_MODE=dynamic` في بيئات Vercel الثلاث.
 - لا توجد Runtime errors في آخر نافذة فحص 30 دقيقة. أخطاء `x-action-redirect` التي ظهرت سابقًا كانت على Deployment قديم قبل إصلاح ترميز رسالة الخطأ العربية.
 
 ### Cloudinary
@@ -54,8 +57,8 @@
 - مجلدات BARTIKA: `bartika-jeans/products`, `bartika-jeans/inventory`, `bartika-jeans/general`.
 - الصورة التي أرسلها المالك موجودة في الحساب تحت Public ID `1000062284` في الجذر؛ لم تُعيّن كصورة منتج أو شعار.
 - كود توقيع الرفع في `src/app/api/cloudinary/signature/route.ts` يشترط Admin وأسرار الحساب وFolder Mode.
-- الرفع الموقّع لا يزال غير مكتمل حتى إضافة API Key وAPI Secret وتأكيد Folder Mode.
-- شعار إعدادات المتجر يشير إلى Cloud Name مختلف `dcuveyab9`. لا يتم استبداله بصورة أخرى دون ملف شعار معتمد.
+- تم تحميل الشعار الرسمي الجديد إلى الحساب وربطه بإعداد المتجر؛ يبقى اختبار رفع صورة منتج من لوحة Admin بعد تسجيل الدخول.
+- شعار إعدادات المتجر ومكونات الدخول واللوحة تستخدم الآن الصورة المعتمدة https://res.cloudinary.com/lnsnp6km/image/upload/v1794847704/bartika-brand-logo-2026.webp.
 - لا تضع API Secret في المتصفح أو `NEXT_PUBLIC_*`.
 
 ### البريد وSupabase Auth
