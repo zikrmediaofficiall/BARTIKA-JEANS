@@ -26,16 +26,25 @@ export default async function Inventory() {
             </tr>
           </thead>
           <tbody>
-            {(data || []).map((row, index) => (
-              <tr key={index}>
-                <td>{row.product_variants?.products?.name}</td>
-                <td>{row.product_variants?.products?.sku}</td>
-                <td>{row.product_variants?.barcode}</td>
-                <td>{row.product_variants?.size || "—"}</td>
-                <td>{row.product_variants?.color || "—"}</td>
-                <td className="font-bold">{row.quantity}</td>
-              </tr>
-            ))}
+            {(data || []).map((row, index) => {
+              const variant = Array.isArray(row.product_variants)
+                ? row.product_variants[0]
+                : row.product_variants;
+              const product = Array.isArray(variant?.products)
+                ? variant.products[0]
+                : variant?.products;
+
+              return (
+                <tr key={index}>
+                  <td>{product?.name || "—"}</td>
+                  <td>{product?.sku || "—"}</td>
+                  <td>{variant?.barcode || "—"}</td>
+                  <td>{variant?.size || "—"}</td>
+                  <td>{variant?.color || "—"}</td>
+                  <td className="font-bold">{row.quantity}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
