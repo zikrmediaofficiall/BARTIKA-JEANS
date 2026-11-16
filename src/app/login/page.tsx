@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { signIn } from "@/app/actions";
 
 const brandLogo = "https://res.cloudinary.com/dcuveyab9/image/upload/v1794812757/bartika-jeans/general/bartika-brand-logo.webp";
@@ -6,7 +7,7 @@ const brandLogo = "https://res.cloudinary.com/dcuveyab9/image/upload/v1794812757
 export default async function Login({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; password_updated?: string }>;
 }) {
   const query = await searchParams;
 
@@ -26,6 +27,12 @@ export default async function Login({
           <h1 className="text-2xl font-black text-emerald-950">BARTIKA JEANS</h1>
           <p className="muted mt-2">نظام إدارة المحل</p>
         </div>
+
+        {query.password_updated ? (
+          <p className="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">
+            تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.
+          </p>
+        ) : null}
 
         {query.error ? (
           <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">
@@ -58,13 +65,16 @@ export default async function Login({
           <button className="btn btn-primary w-full">تسجيل الدخول</button>
         </form>
 
+        <div className="mt-4 text-center">
+          <Link href="/forgot-password" className="text-sm font-bold text-emerald-800 underline">
+            نسيت كلمة المرور؟ إنشاء كلمة مرور جديدة
+          </Link>
+        </div>
+
         <div className="mt-5 border-t border-slate-100 pt-4 text-center">
-          <p className="muted mb-3 text-xs">
-            يتم إنشاء حساب المدير الأول من Supabase بعد إعداد قاعدة البيانات.
-          </p>
-          <a href="/shop" className="text-sm font-bold text-emerald-800 underline">
+          <Link href="/shop" className="text-sm font-bold text-emerald-800 underline">
             زيارة متجر BARTIKA العام
-          </a>
+          </Link>
         </div>
       </section>
     </main>
