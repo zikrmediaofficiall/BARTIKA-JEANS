@@ -473,7 +473,7 @@ export type Database = {
           product_name_snapshot: string
           quantity: number
           size_snapshot: string | null
-          unit_cost_snapshot: number
+          unit_cost_snapshot: number | null
           unit_price: number
           variant_id: string
         }
@@ -488,7 +488,7 @@ export type Database = {
           product_name_snapshot: string
           quantity: number
           size_snapshot?: string | null
-          unit_cost_snapshot?: number
+          unit_cost_snapshot?: number | null
           unit_price: number
           variant_id: string
         }
@@ -503,7 +503,7 @@ export type Database = {
           product_name_snapshot?: string
           quantity?: number
           size_snapshot?: string | null
-          unit_cost_snapshot?: number
+          unit_cost_snapshot?: number | null
           unit_price?: number
           variant_id?: string
         }
