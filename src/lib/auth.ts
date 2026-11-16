@@ -1,4 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-export async function getSessionContext(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return {supabase,user:null,profile:null};const {data:profile}=await supabase.from("profiles").select("id,full_name,role,is_active").eq("id",user.id).maybeSingle();return {supabase,user,profile};}
+export async function getSessionContext(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return {supabase,user:null,profile:null};const {data:profile}=await supabase.from("profiles").select("id,full_name,role,is_active,max_discount_percent").eq("id",user.id).maybeSingle();return {supabase,user,profile};}
 export async function requireUser(){const c=await getSessionContext();if(!c.user||!c.profile?.is_active)throw new Error("يجب تسجيل الدخول");return c;}
 export async function requireAdmin(){const c=await requireUser();if(c.profile?.role!=="admin")throw new Error("هذه الصفحة متاحة للأدمن فقط");return c;}
