@@ -11,7 +11,7 @@ export async function signIn(formData: FormData) {
   const password = String(formData.get("password") || "");
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) redirect("/login?error=بيانات الدخول غير صحيحة");
+  if (error) redirect(`/login?error=${encodeURIComponent("بيانات الدخول غير صحيحة")}`);
   redirect("/");
 }
 
