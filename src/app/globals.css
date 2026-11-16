@@ -36,3 +36,27 @@
   }
   body[data-print-mode="barcode-labels"] .barcode-svg { max-height: 13mm; }
 }
+
+
+/* Printable social, shop and payment QR cards */
+@media print {
+  body[data-print-mode="qr-codes"] * { visibility: hidden !important; }
+  body[data-print-mode="qr-codes"] #bartika-qr-print,
+  body[data-print-mode="qr-codes"] #bartika-qr-print * { visibility: visible !important; }
+  body[data-print-mode="qr-codes"] #bartika-qr-print {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    display: grid !important;
+    width: 100% !important;
+    grid-template-columns: repeat(2, 82mm);
+    gap: 5mm;
+    padding: 0 !important;
+  }
+  body[data-print-mode="qr-codes"] .qr-card {
+    width: 82mm;
+    border: 1px solid #d9dedb !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
