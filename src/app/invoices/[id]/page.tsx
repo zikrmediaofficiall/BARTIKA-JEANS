@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { notFound, redirect } from "next/navigation";
-import { getSessionContext } from "@/lib/auth";
+import { notFound } from "next/navigation";
+import { requireUser } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { PrintButton } from "./print-button";
 import { QRCodeSVG } from "qrcode.react";
@@ -17,22 +17,21 @@ export default async function InvoiceDetail({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, user, profile } = await getSessionContext();
+  const { supabase, user, profile } = await requireUser();
 
-  if (!user) redirect("/login");
-
-  const { data: sale } = await supabase
+  const { data: sale, error: saleError } = await supabase
     .from("sales")
     .select("*")
     .eq("id", id)
     .maybeSingle();
 
+  if (saleError) throw new Error("تعذر تحميل الفاتورة: " + saleError.message);
   if (!sale) notFound();
 
   const [
     { data: items },
     { data: payments },
-    { data: storeSettings },
+    { data: storeSettings, error: storeSettingsError },
   ] = await Promise.all([
     supabase
       .from("sale_items")
@@ -46,7 +45,7 @@ export default async function InvoiceDetail({
       .eq("sale_id", id),
     supabase
       .from("store_settings")
-      .select("store_name,store_name_ar,phone,address,logo_url")
+      .select("store_name,store_name_ar,phone,address,logo_url,exchange_days")
       .eq("id", 1)
       .maybeSingle(),
   ]);
@@ -66,6 +65,8 @@ export default async function InvoiceDetail({
       ])
     : [{ data: [] }, { data: [] }];
 
+  const relatedError = items === null || payments === null ? null : null;
+  if (storeSettingsError) throw new Error("تعذر تحميل إعدادات الفاتورة: " + storeSettingsError.message);
   const storeName = storeSettings?.store_name || "BARTIKA JEANS";
   const storeNameAr = storeSettings?.store_name_ar || "بارتيكا جينز";
   const logoUrl =
@@ -180,8 +181,9 @@ export default async function InvoiceDetail({
 
         <div className="mt-6 border-t pt-4 text-xs text-slate-500">
           <p>
-            الاستبدال الطوعي خلال 3 أيام للسلع السليمة وفق سياسة المحل، مع
-            الحفاظ على الحقوق القانونية للمستهلك.
+            {Number(storeSettings?.exchange_days ?? 3) > 0
+              ? `الاستبدال الطوعي خلال ${Number(storeSettings?.exchange_days ?? 3)} يوم للسلع السليمة وفق سياسة المحل، مع الحفاظ على الحقوق القانونية للمستهلك.`
+              : "لا يقدم المتجر استبدالًا طوعيًا للسلع السليمة، مع الحفاظ الكامل على الحقوق القانونية للمستهلك في العيب أو عدم المطابقة."}
           </p>
           <p className="mt-2">شكرًا لزيارتكم {storeName}</p>
           <div className="mt-4 flex items-center justify-center gap-3">
