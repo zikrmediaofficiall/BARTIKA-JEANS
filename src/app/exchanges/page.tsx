@@ -26,7 +26,7 @@ export default async function Exchanges({
 
   const exchangeQuery = supabase
     .from("exchanges")
-    .select("id,original_sale_id,reason,status,price_difference,created_at,created_by")
+    .select("id,original_sale_id,reason,status,price_difference,exchange_type,created_at,created_by")
     .order("created_at", { ascending: false })
     .limit(50);
   const { data: exchanges, error: exchangesError } = canExecute && profile.role !== "admin"
@@ -253,6 +253,7 @@ export default async function Exchanges({
               <th>الفاتورة الأصلية</th>
               <th>التاريخ</th>
               <th>السبب</th>
+              <th>نوع الحالة</th>
               <th>فرق السعر</th>
               <th>الحالة</th>
             </tr>
@@ -264,12 +265,19 @@ export default async function Exchanges({
                 <td>#{numberBySale.get(exchange.original_sale_id) || "—"}</td>
                 <td>{new Date(exchange.created_at).toLocaleString("ar-EG")}</td>
                 <td>{exchange.reason}</td>
+                <td>
+                  {exchange.exchange_type === "defect"
+                    ? "عيب"
+                    : exchange.exchange_type === "nonconforming"
+                      ? "غير مطابق"
+                      : "طوعي"}
+                </td>
                 <td>{Number(exchange.price_difference).toFixed(2)} ج.م</td>
                 <td>{exchange.status === "completed" ? "مكتملة" : exchange.status}</td>
               </tr>
             ))}
             {!exchanges?.length ? (
-              <tr><td colSpan={6} className="py-6 text-center muted">لا توجد عمليات استبدال مسجلة.</td></tr>
+              <tr><td colSpan={7} className="py-6 text-center muted">لا توجد عمليات استبدال مسجلة.</td></tr>
             ) : null}
           </tbody>
         </table>
