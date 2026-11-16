@@ -3,6 +3,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { fileURLToPath } = require("node:url");
 const {
   app,
   BrowserWindow,
@@ -57,6 +58,18 @@ function isTrustedAppUrl(value) {
   try {
     const url = new URL(value);
     return url.protocol === "https:" && url.hostname === APP_HOST;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function isTrustedLocalPage(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "file:") return false;
+    const localPath = path.resolve(fileURLToPath(url));
+    const relativePath = path.relative(path.resolve(__dirname), localPath);
+    return relativePath === "startup.html" || relativePath === "offline.html";
   } catch (_error) {
     return false;
   }
@@ -141,7 +154,7 @@ function createMainWindow() {
   });
 
   mainWindow.webContents.on("will-navigate", (event, targetUrl) => {
-    if (isTrustedAppUrl(targetUrl)) return;
+    if (isTrustedAppUrl(targetUrl) || isTrustedLocalPage(targetUrl)) return;
     event.preventDefault();
     openExternalSafely(targetUrl);
   });
@@ -216,10 +229,6 @@ process.on("uncaughtException", (error) => {
 
 process.on("unhandledRejection", (reason) => {
   writeLog(`Unhandled promise rejection: ${reason && reason.stack ? reason.stack : reason}`);
-});
-
-app.on("render-process-gone", (_event, _webContents, details) => {
-  writeLog(`App renderer process gone: ${JSON.stringify(details)}`);
 });
 
 app.whenReady().then(() => {
