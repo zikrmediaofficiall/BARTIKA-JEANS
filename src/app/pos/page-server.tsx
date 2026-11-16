@@ -1,0 +1,1 @@
+// Server-side catalog loader helper. The route itself is page.tsx in a normal Next.js app.
