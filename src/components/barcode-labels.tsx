@@ -64,7 +64,7 @@ export function BarcodeLabels({ items }: { items: BarcodeLabelItem[] }) {
     setCopies((current) => ({ ...current, [id]: Math.max(0, Math.min(500, Math.floor(value || 0))) }));
   }
 
-  function useStockQuantity(item: BarcodeLabelItem) {
+  function applyStockQuantity(item: BarcodeLabelItem) {
     setCopyCount(item.id, Math.max(1, item.stock));
   }
 
@@ -114,7 +114,7 @@ export function BarcodeLabels({ items }: { items: BarcodeLabelItem[] }) {
             <div className="no-print mb-3 flex items-center gap-2">
               <label className="text-xs font-bold">عدد النسخ</label>
               <input className="field w-24 py-2" type="number" min="0" max="500" value={copies[item.id] ?? 1} onChange={(event) => setCopyCount(item.id, Number(event.target.value))} />
-              <button className="text-xs font-bold text-emerald-800 underline" type="button" onClick={() => useStockQuantity(item)}>حسب رصيد المخزون</button>
+              <button className="text-xs font-bold text-emerald-800 underline" type="button" onClick={() => applyStockQuantity(item)}>حسب رصيد المخزون</button>
             </div>
             <div className="barcode-one-label rounded-lg border border-slate-200 bg-white p-2 text-center">
               <p className="mb-1 truncate text-xs font-bold text-slate-900">{item.product_name}</p>
