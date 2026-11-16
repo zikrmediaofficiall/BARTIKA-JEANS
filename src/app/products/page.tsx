@@ -107,10 +107,7 @@ export default async function Products() {
                     <div key={variant.id} className="text-sm">
                       {variant.barcode} · {variant.size || "—"} · {variant.color || "—"} ·
                       مخزون:{" "}
-                      {variant.inventory.reduce(
-                        (quantity, entry) => quantity + Number(entry.quantity),
-                        0,
-                      )}
+                      {variant.inventory?.quantity ?? 0}
                     </div>
                   ))}
                 </td>
