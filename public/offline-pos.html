@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0038c8">
+  <title>BARTIKA JEANS | نقطة البيع دون اتصال</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f2f5fc;color:#101a38;font-family:Arial,Tahoma,sans-serif}
+    header{background:linear-gradient(120deg,#000010,#001068 65%,#0038c8);color:#fff;padding:18px;border-bottom:2px solid #d8aa3d}main{max-width:1200px;margin:auto;padding:16px}
+    .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .pill{padding:7px 12px;border-radius:999px;font-size:12px;font-weight:bold;background:#fef3c7;color:#92400e}
+    .panel{background:white;border:1px solid #dce5f7;border-radius:16px;padding:16px;margin:14px 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+    .product,.line{border:1px solid #e5ebe7;border-radius:12px;padding:12px;background:#fff}
+    button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;font-weight:bold;background:linear-gradient(120deg,#0038c8,#001068);color:#fff}
+    button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#fff;color:#001068;border:1px solid #d8aa3d}
+    .danger{background:#fff;color:#b42318;border:1px solid #f2c5c2}
+    input,select{width:100%;padding:10px;border:1px solid #cbd7f0;border-radius:10px;background:white}
+    label{display:block;font-size:13px;font-weight:bold;margin:9px 0}.muted{color:#75847d;font-size:12px}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px}.actions{display:flex;gap:6px;align-items:center}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.notice{background:#fff7df;border:1px solid #f1d58b;border-radius:12px;padding:12px;font-size:13px;line-height:1.8}
+    .total{font-size:22px;font-weight:900;color:#001068}.hidden{display:none!important}
+    @media(max-width:640px){.two{grid-template-columns:1fr}main{padding:10px}.panel{padding:12px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div><img src="/bartika-logo.webp" alt="BARTIKA JEANS" width="150" height="72" style="object-fit:contain;display:block"><div class="muted" style="color:#f8e888">نقطة البيع دون اتصال</div></div>
+    <span id="connection" class="pill">جارٍ التحقق من الاتصال</span>
+  </div>
+</header>
+<main>
+  <div class="notice">
+    هذه الواجهة تستخدم آخر كتالوج تم حفظه محليًا على هذا الجهاز. عمليات البيع تُحفظ كمعلّقة وتُرسل تلقائيًا عند عودة الإنترنت، لكنها لا تصبح فواتير معتمدة ولا تخصم المخزون إلا بعد نجاح التحقق على الخادم. عمليات تعارض المخزون أو الوردية أو الصلاحيات تنتقل إلى «تحتاج مراجعة». لا تعتبر InstaPay أو Visa مدفوعة دون تحقق فعلي.
+  </div>
+  <section class="panel">
+    <div class="bar"><div><h2 style="margin:0">الأصناف المحفوظة</h2><p id="catalogMeta" class="muted">لم يتم تحميل كتالوج محفوظ بعد.</p></div><div class="actions"><a href="/pos"><button class="secondary">تحديث الكتالوج من النظام</button></a><a href="/"><button class="secondary">العودة للنظام</button></a></div></div>
+    <label>بحث بالاسم أو الباركود أو SKU<input id="search" placeholder="ابحث عن صنف أو امسح الباركود"></label>
+    <div id="catalog" class="grid"></div>
+  </section>
+  <section class="panel">
+    <div class="bar"><h2 style="margin:0">الفاتورة المعلّقة</h2><span id="cartCount" class="muted">0 صنف</span></div>
+    <div id="cart" class="grid" style="margin-top:12px"></div>
+    <div class="two">
+      <label>الخصم المسموح<input id="discount" type="number" min="0" step=".5" value="0"></label>
+      <label>رقم العميل عند البيع الآجل<input id="customer" placeholder="01xxxxxxxxx"></label>
+    </div>
+    <div class="two">
+      <label>طريقة الدفع الأولى<select id="method"><option value="cash">كاش</option><option value="instapay">InstaPay</option><option value="visa">Visa</option></select></label>
+      <label>المبلغ الأول<input id="paid" type="number" min="0" step=".01" placeholder="الإجمالي"></label>
+    </div>
+    <div class="two">
+      <label>طريقة الدفع الثانية<select id="secondMethod"><option value="instapay">InstaPay</option><option value="cash">كاش</option><option value="visa">Visa</option></select></label>
+      <label>المبلغ الثاني<input id="secondPaid" type="number" min="0" step=".01" value="0"></label>
+    </div>
+    <label>مرجع التحويل / الفيزا<input id="reference" placeholder="مرجع العملية إن وجد"></label>
+    <div class="row" style="border-top:1px solid #edf1ee;padding-top:14px;margin-top:14px">
+      <span>الإجمالي بعد الخصم</span><span id="total" class="total">0.00 ج.م</span>
+    </div>
+    <div class="row" style="margin-top:8px"><span class="muted">المتبقي</span><b id="due">0.00 ج.م</b></div>
+    <button id="saveSale" style="width:100%;margin-top:14px">حفظ البيع محليًا كعملية معلّقة</button>
+    <p id="message" class="muted" role="status" style="margin-top:10px"></p>
+  </section>
+  <section class="panel">
+    <div class="bar"><div><h2 style="margin:0">قائمة المزامنة</h2><p id="queueMeta" class="muted">0 عمليات معلّقة</p></div><button id="sync">مزامنة عند الاتصال</button></div>
+    <div id="queue" style="margin-top:12px"></div>
+  </section>
+</main>
+<script src="/offline-pos.js" defer></script>
+</body>
+</html>

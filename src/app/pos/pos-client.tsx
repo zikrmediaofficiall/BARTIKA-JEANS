@@ -1,7 +1,15 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { checkoutSale } from "@/app/actions";
+import {
+  cachePosCatalog,
+  enqueueOfflineSale,
+  listOfflineSales,
+  updateOfflineSale,
+  type OfflineSaleRecord,
+  type OfflineSalePayload,
+} from "@/lib/offline-pos";
 
 type Item = {
   variant_id: string;
@@ -42,6 +50,96 @@ export default function POSClient({
   const [customer, setCustomer] = useState("");
   const [message, setMessage] = useState("");
   const [busy, start] = useTransition();
+  const [isOnline, setIsOnline] = useState(true);
+  const [offlineRecords, setOfflineRecords] = useState<OfflineSaleRecord[]>([]);
+  const [syncingOffline, setSyncingOffline] = useState(false);
+  const syncingOfflineRef = useRef(false);
+  const syncOfflineQueueRef = useRef<() => Promise<void>>(async () => {});
+
+  const refreshOfflineQueue = useCallback(async () => {
+    try {
+      const records = await listOfflineSales();
+      setOfflineRecords(records.filter((record) => record.status !== "synced"));
+    } catch {
+      // IndexedDB may be unavailable in private browsing; online POS remains usable.
+    }
+  }, []);
+
+  useEffect(() => {
+    const updateConnection = () => {
+      const online = navigator.onLine;
+      setIsOnline(online);
+      if (online) void syncOfflineQueueRef.current();
+    };
+    updateConnection();
+    window.addEventListener("online", updateConnection);
+    window.addEventListener("offline", updateConnection);
+    void cachePosCatalog({ items: catalog, maxDiscount }).catch(() => {});
+    void refreshOfflineQueue();
+    return () => {
+      window.removeEventListener("online", updateConnection);
+      window.removeEventListener("offline", updateConnection);
+    };
+  }, [catalog, maxDiscount, refreshOfflineQueue]);
+
+  async function syncOfflineQueue() {
+    if (!navigator.onLine) {
+      setMessage("لا يوجد اتصال بالإنترنت. ستظل الفواتير محفوظة على هذا الجهاز.");
+      return;
+    }
+    if (syncingOfflineRef.current) return;
+    syncingOfflineRef.current = true;
+    setSyncingOffline(true);
+    try {
+      const records = await listOfflineSales();
+      for (const record of records) {
+        if (record.status !== "pending") continue;
+        try {
+          const response = await fetch("/api/offline-sales/sync", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(record.payload),
+          });
+          const body = await response.json().catch(() => ({}));
+          if (response.status === 401) {
+            setMessage(body.error || "سجل الدخول مرة أخرى قبل مزامنة المبيعات.");
+            break;
+          }
+          if (!response.ok) {
+            await updateOfflineSale({
+              ...record,
+              status: "needs_review",
+              error: body.error || "تعذر اعتماد الفاتورة؛ راجع المخزون والوردية والصلاحيات.",
+            });
+            continue;
+          }
+          const sale = body.sale && typeof body.sale === "object" ? body.sale : {};
+          await updateOfflineSale({
+            ...record,
+            status: "synced",
+            error: undefined,
+            sale_id: typeof sale.id === "string" ? sale.id : undefined,
+            invoice_number: typeof sale.invoice_number === "number" ? sale.invoice_number : undefined,
+          });
+        } catch (error) {
+          await updateOfflineSale({
+            ...record,
+            status: "pending",
+            error: error instanceof Error ? error.message : "تعذر الاتصال بالخادم",
+          });
+          break;
+        }
+      }
+      await refreshOfflineQueue();
+      setMessage("انتهت محاولة المزامنة. راجع الفواتير التي تحتاج مراجعة قبل اعتبارها معتمدة.");
+    } finally {
+      syncingOfflineRef.current = false;
+      setSyncingOffline(false);
+    }
+  }
+
+  syncOfflineQueueRef.current = syncOfflineQueue;
 
   const filtered = useMemo(
     () =>
@@ -113,35 +211,38 @@ export default function POSClient({
       return setMessage("أدخل رقم هاتف العميل عند وجود مبلغ متبقٍ");
     }
 
+    const payload: OfflineSalePayload = {
+      idempotency_key: crypto.randomUUID(),
+      items: cart.map((item) => ({
+        variant_id: item.variant_id,
+        quantity: item.qty,
+      })),
+      payments: [
+        ...(firstAmount > 0 ? [{ method, amount: firstAmount, reference }] : []),
+        ...(secondAmount > 0 ? [{ method: secondMethod, amount: secondAmount, reference }] : []),
+      ],
+      discount_percent: discount,
+      customer_phone: customer || undefined,
+    };
+
     start(async () => {
       try {
-        const result = await checkoutSale({
-          idempotency_key: crypto.randomUUID(),
-          items: cart.map((item) => ({
-            variant_id: item.variant_id,
-            quantity: item.qty,
-          })),
-          payments: [
-            ...(firstAmount > 0
-              ? [{ method, amount: firstAmount, reference }]
-              : []),
-            ...(secondAmount > 0
-              ? [{ method: secondMethod, amount: secondAmount, reference }]
-              : []),
-          ],
-          discount_percent: discount,
-          customer_phone: customer || undefined,
-        });
-
-        const invoiceLabel =
-          result && typeof result === "object" && !Array.isArray(result)
-            ? typeof result.invoice_number === "number"
-              ? String(result.invoice_number)
-              : typeof result.id === "string"
-                ? result.id
-                : ""
-            : "";
-        setMessage("تم إنشاء الفاتورة رقم " + invoiceLabel);
+        if (!navigator.onLine) {
+          await enqueueOfflineSale(payload);
+          await refreshOfflineQueue();
+          setMessage("تم حفظ العملية على هذا الجهاز كفاتورة معلّقة. لن تُعتبر بيعًا معتمدًا حتى تنجح المزامنة والتحقق من المخزون والوردية.");
+        } else {
+          const result = await checkoutSale(payload);
+          const invoiceLabel =
+            result && typeof result === "object" && !Array.isArray(result)
+              ? typeof result.invoice_number === "number"
+                ? String(result.invoice_number)
+                : typeof result.id === "string"
+                  ? result.id
+                  : ""
+              : "";
+          setMessage("تم إنشاء الفاتورة رقم " + invoiceLabel);
+        }
         setCart([]);
         setPaid("");
         setSecondPaid("");
@@ -149,7 +250,13 @@ export default function POSClient({
         setReference("");
         setDiscount(0);
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : "تعذر إتمام البيع");
+        if (!navigator.onLine || error instanceof TypeError) {
+          await enqueueOfflineSale(payload);
+          await refreshOfflineQueue();
+          setMessage("انقطع الاتصال أثناء الحفظ؛ تم الاحتفاظ بالعملية محليًا بنفس رقم التكرار لمنع إصدار فاتورتين. المزامنة مطلوبة.");
+        } else {
+          setMessage(error instanceof Error ? error.message : "تعذر إتمام البيع");
+        }
       }
     });
   }
@@ -157,7 +264,42 @@ export default function POSClient({
   return (
     <main className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
       <section className="panel p-5">
-        <h2 className="mb-4 text-xl font-black">الكاشير ونقطة البيع</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-black">الكاشير ونقطة البيع</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={"rounded-full px-3 py-2 text-xs font-bold " + (isOnline ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900")}>
+              {isOnline ? "متصل" : "دون اتصال"}
+            </span>
+            <a className="btn border text-xs" href="/offline-pos.html">فتح واجهة البيع Offline</a>
+          </div>
+        </div>
+        {offlineRecords.length ? (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <b className="text-sm">فواتير محفوظة على الجهاز: {offlineRecords.length}</b>
+                <p className="muted mt-1 text-xs">غير معتمدة حتى تظهر برقم فاتورة بعد المزامنة.</p>
+              </div>
+              <button type="button" className="btn btn-primary" disabled={!isOnline || syncingOffline} onClick={syncOfflineQueue}>
+                {syncingOffline ? "جارٍ المزامنة…" : "مزامنة الفواتير"}
+              </button>
+            </div>
+            <ul className="mt-3 space-y-1 text-xs">
+              {offlineRecords.slice(0,5).map((record) => (
+                <li key={record.idempotency_key}>
+                  {new Date(record.created_at).toLocaleString("ar-EG")} ·
+                  {record.status === "needs_review" ? " تحتاج مراجعة" : " بانتظار المزامنة"}
+                  {record.error ? " · " + record.error : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {!isOnline ? (
+          <p className="mb-4 rounded-lg bg-amber-50 p-3 text-xs leading-6 text-amber-900">
+            الوضع دون اتصال يستخدم آخر كتالوج محفوظ. البيع يُحفظ كمعلّق فقط، ولا يتم خصم المخزون أو إصدار فاتورة رسمية إلا بعد المزامنة الناجحة.
+          </p>
+        ) : null}
         <input
           className="field mb-4"
           placeholder="امسح الباركود أو ابحث باسم الصنف / SKU"
