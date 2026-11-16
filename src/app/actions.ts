@@ -73,25 +73,56 @@ export async function updateStoreSettings(formData: FormData) {
 }
 
 const productSchema = z.object({
-  name: z.string().trim().min(2),
-  sku: z.string().trim().min(2),
-  barcode: z.string().trim().optional(),
-  category: z.string().trim().optional(),
-  size: z.string().trim().optional(),
-  color: z.string().trim().optional(),
+  name: z.string().trim().min(2).max(160),
+  sku: z.string().trim().min(2).max(80),
+  category: z.string().trim().max(80).optional(),
   cost: z.coerce.number().finite().min(0),
   price: z.coerce.number().finite().positive(),
-  qty: z.coerce.number().int().min(0),
+  variants_json: z.string().min(2),
   image_url: z.union([z.string().url(), z.literal("")]).optional(),
   image_public_id: z.union([z.string().trim().max(255), z.literal("")]).optional(),
+});
+
+const productVariantSchema = z.object({
+  size: z.string().trim().max(40),
+  color: z.string().trim().max(60),
+  barcode: z.string().trim().max(64),
+  opening_quantity: z.number().int().min(0),
 });
 
 export async function addProduct(formData: FormData): Promise<void> {
   const { supabase } = await requireAdmin();
   const parsed = productSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) throw new Error("راجع بيانات الصنف");
+  if (!parsed.success) throw new Error("راجع بيانات المنتج والسعر");
 
   const product = parsed.data;
+  let decodedVariants: unknown;
+  try {
+    decodedVariants = JSON.parse(product.variants_json);
+  } catch {
+    throw new Error("بيانات المقاسات والألوان غير صالحة");
+  }
+
+  const parsedVariants = z.array(productVariantSchema).min(1).max(100).safeParse(decodedVariants);
+  if (!parsedVariants.success) {
+    throw new Error("راجع المقاسات والألوان والباركود والكميات الافتتاحية");
+  }
+
+  const variants = parsedVariants.data;
+  const optionKeys = variants.map((variant) =>
+    `${variant.size.normalize("NFKC").toLocaleLowerCase("ar")}::${variant.color.normalize("NFKC").toLocaleLowerCase("ar")}`,
+  );
+  if (new Set(optionKeys).size !== optionKeys.length) {
+    throw new Error("لا يمكن تكرار نفس تركيبة المقاس واللون داخل المنتج");
+  }
+
+  const explicitBarcodes = variants
+    .map((variant) => variant.barcode.trim().toLocaleLowerCase("en"))
+    .filter(Boolean);
+  if (new Set(explicitBarcodes).size !== explicitBarcodes.length) {
+    throw new Error("لا يمكن تكرار الباركود داخل المنتج");
+  }
+
   const imageUrl = product.image_url || "";
   const imagePublicId = product.image_public_id || "";
 
@@ -122,16 +153,13 @@ export async function addProduct(formData: FormData): Promise<void> {
     }
   }
 
-  const { data, error } = await supabase.rpc("add_product_with_variant", {
+  const { data, error } = await supabase.rpc("add_product_with_variants", {
     p_name: product.name,
     p_sku: product.sku,
     p_category: product.category || "جينز",
     p_cost_price: product.cost,
     p_sale_price: product.price,
-    p_barcode: product.barcode || undefined,
-    p_size: product.size || undefined,
-    p_color: product.color || undefined,
-    p_opening_quantity: product.qty,
+    p_variants: variants,
   });
 
   if (error) throw new Error(error.message);
@@ -145,7 +173,7 @@ export async function addProduct(formData: FormData): Promise<void> {
         : null;
 
     if (!productId) {
-      throw new Error("تم إنشاء الصنف لكن لم يرجع معرّف المنتج لحفظ الصورة");
+      throw new Error("تم إنشاء المنتج لكن لم يرجع معرّف المنتج لحفظ الصورة");
     }
 
     const { error: imageError } = await supabase
@@ -159,6 +187,7 @@ export async function addProduct(formData: FormData): Promise<void> {
 
   revalidatePath("/products");
   revalidatePath("/inventory");
+  revalidatePath("/pos");
 }
 
 const saleSchema = z.object({
