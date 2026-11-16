@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Node smoke check uses CommonJS. */
 "use strict";
 
 const assert = require("node:assert/strict");
