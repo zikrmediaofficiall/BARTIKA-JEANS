@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { PrintButton } from "./print-button";
+import { QRCodeSVG } from "qrcode.react";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("ar-EG", {
@@ -177,6 +178,10 @@ export default async function InvoiceDetail({
             الحفاظ على الحقوق القانونية للمستهلك.
           </p>
           <p className="mt-2">شكرًا لزيارتكم {storeName}</p>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <QRCodeSVG value="https://bartika-jeans.vercel.app/links" size={84} level="H" marginSize={3} />
+            <p className="max-w-32 text-xs leading-5">امسح الكود لمتابعة BARTIKA على منصات التواصل والمتجر</p>
+          </div>
         </div>
 
         <div className="mt-5 print:hidden">
