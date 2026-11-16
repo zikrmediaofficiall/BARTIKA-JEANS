@@ -58,9 +58,14 @@ export default async function Login({
           <button className="btn btn-primary w-full">تسجيل الدخول</button>
         </form>
 
-        <p className="muted mt-5 text-center text-xs">
-          يتم إنشاء حساب المدير الأول من Supabase بعد إعداد قاعدة البيانات.
-        </p>
+        <div className="mt-5 border-t border-slate-100 pt-4 text-center">
+          <p className="muted mb-3 text-xs">
+            يتم إنشاء حساب المدير الأول من Supabase بعد إعداد قاعدة البيانات.
+          </p>
+          <a href="/shop" className="text-sm font-bold text-emerald-800 underline">
+            زيارة متجر BARTIKA العام
+          </a>
+        </div>
       </section>
     </main>
   );
