@@ -8,6 +8,8 @@ type ReportJson = {
   due_total?: number;
   discount_total?: number;
   is_admin?: boolean;
+  cogs_complete?: boolean | null;
+  cost_snapshot_missing_items?: number | null;
   cogs_total?: number | null;
   gross_profit?: number | null;
   expenses_total?: number | null;
@@ -75,6 +77,8 @@ export default async function Reports({
   const dueTotal = Number(raw.due_total || 0);
   const discountTotal = Number(raw.discount_total || 0);
   const canSeeProfit = profile.role === "admin" && raw.is_admin === true;
+  const canShowProfit = canSeeProfit && raw.cogs_complete === true;
+  const missingCostSnapshots = Number(raw.cost_snapshot_missing_items || 0);
 
   return (
     <Shell user={user.email || ""} role={profile.role}>
@@ -115,10 +119,23 @@ export default async function Reports({
         {metric("إجمالي الخصومات", discountTotal)}
         {canSeeProfit ? (
           <>
-            {metric("تكلفة البضاعة المباعة", Number(raw.cogs_total || 0))}
-            {metric("مجمل الربح", Number(raw.gross_profit || 0))}
+            {canShowProfit ? (
+              <>
+                {metric("تكلفة البضاعة المباعة", Number(raw.cogs_total || 0))}
+                {metric("مجمل الربح", Number(raw.gross_profit || 0))}
+              </>
+            ) : (
+              <div className="panel p-5 sm:col-span-2">
+                <p className="font-bold text-amber-900">لا يمكن اعتماد الربح لهذه الفترة بعد</p>
+                <p className="muted mt-2 text-sm">
+                  توجد {missingCostSnapshots.toLocaleString("ar-EG")} بنود بيع بدون لقطة تكلفة تاريخية. تم إخفاء مجمل الربح وصافي التشغيل حتى تكتمل بيانات التكلفة بدل احتسابها بصفر.
+                </p>
+              </div>
+            )}
             {metric("المصروفات المسجلة", Number(raw.expenses_total || 0))}
-            {metric("صافي تشغيلي تقديري", Number(raw.net_profit || 0), "المبيعات بعد الخصم − تكلفة البضاعة − المصروفات المسجلة. لا يشمل التزامات أو ضرائب غير مدخلة.")}
+            {canShowProfit
+              ? metric("صافي تشغيلي تقديري", Number(raw.net_profit || 0), "المبيعات بعد الخصم − تكلفة البضاعة − المصروفات المسجلة. لا يشمل التزامات أو ضرائب غير مدخلة.")
+              : null}
           </>
         ) : (
           <div className="panel p-5 sm:col-span-1">
