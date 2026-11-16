@@ -4,11 +4,12 @@
 
 ## الخدمات والدومين
 
-- GitHub: `zikrofficial-X/BARTIKA-JEANS` (المستودع ما زال Public ويجب تحويله إلى Private).
+- GitHub: `zikrofficial-X/BARTIKA-JEANS` (المستودع ما زال Public؛ يُنصح بتحويله إلى Private قبل إدخال بيانات تشغيل حساسة).
 - Supabase Project Ref: `gnebcwgaahwowxwiqqlj`، المنطقة Frankfurt (`eu-central-1`).
 - Vercel Project: `bartika-jeans`، مربوط بالمستودع وفرع `main`.
 - Production domain: `https://bartika-jeans.vercel.app`.
-- آخر Production Deployment: `dpl_Bo8o2pqJ4kwJx22LbUAEYVNpHN9m`، الحالة READY، Commit `b3559c7715ce514b513184ceb71d9d2445d10f55`.
+- آخر Production deployment مؤكد قبل إصلاحات الأمان: `dpl_3PdEiTnR4fj7Q5u4uoSqpfLAmvRL`، الحالة READY، Commit `9497c7093fcccb2ee7ad835c91658ec7fd660c5e`.
+- فرع معالجة الاعتمادات الحالي: `fix/security-audit-dependencies-20261116`، وPR رقم 21.
 - لا تستخدم مفاتيح ZIKR أو Project Ref الخاص به.
 
 ## حساب Admin
@@ -19,42 +20,40 @@
 
 ## متغيرات Vercel
 
-متغيرات Supabase اللازمة موجودة في Production.
+### Supabase
 
-تمت إضافة:
-- `CLOUDINARY_CLOUD_NAME=lnsnp6km` إلى Production وPreview وDevelopment.
+- `NEXT_PUBLIC_SUPABASE_URL` و`NEXT_PUBLIC_SUPABASE_ANON_KEY` موجودان في Production.
+- تمت مزامنة نفس قيم الاتصال إلى Preview وDevelopment لأن عميل Supabase SSR يحتاجهما أثناء عرض الصفحات.
+- المفاتيح العامة لا تمنح صلاحيات إدارية؛ تظل سياسات RLS مطبقة.
+- لا تضف `SUPABASE_SERVICE_ROLE_KEY` إلى `NEXT_PUBLIC_*` ولا تكشفه للمتصفح.
 
-ما زال مطلوبًا من مالك حساب Cloudinary:
-- `CLOUDINARY_API_KEY` (Encrypted / Secret).
-- `CLOUDINARY_API_SECRET` (Sensitive / Secret؛ Server only).
-- `CLOUDINARY_FOLDER_MODE` (`fixed` أو `dynamic` بحسب إعداد الحساب الفعلي).
+### Cloudinary
 
-لا تضع `CLOUDINARY_API_SECRET` أو Supabase Service Role في `NEXT_PUBLIC_*` أو Git.
+- `CLOUDINARY_CLOUD_NAME` و`CLOUDINARY_API_KEY` موجودان في بيئات Production وPreview وDevelopment.
+- `CLOUDINARY_FOLDER_MODE=dynamic` مضبوط في البيئات الثلاث، ومتوافق مع مسار التوقيع الحالي في الكود.
+- فحص Vercel كشف أن `CLOUDINARY_API_SECRET` فارغ في Production؛ لا يمكن تأكيد رفع الصور حتى إدخال السر الحقيقي. راجع قيمته وأضفه كـSensitive/Secret إلى Production وPreview وDevelopment من لوحة Vercel.
+- لا تضع `CLOUDINARY_API_SECRET` في أي متغير يبدأ بـ`NEXT_PUBLIC_` أو في Git.
 
-بعد إدخال هذه القيم، أعد نشر Vercel ثم اختبر:
+بعد إدخال السر الحقيقي، أعد نشر Vercel ثم اختبر:
 1. فتح صفحة المنتجات بحساب Admin.
 2. طلب توقيع الرفع من `POST /api/cloudinary/signature`.
 3. رفع صورة JPG/PNG/WebP لا تتجاوز 10 MB إلى `bartika-jeans/products`.
 4. التأكد أن Public ID يقع تحت المجلد وأن رابط HTTPS يُحفظ على المنتج.
 5. إعادة فتح المنتج من صفحة الإدارة والمتجر العام والتحقق من الصورة.
 
-## Cloudinary
+## Cloudinary والأصول
 
-- الحساب المتصل: `lnsnp6km` على الخطة المجانية.
-- مجلدات موجودة: `bartika-jeans/products`, `bartika-jeans/inventory`, `bartika-jeans/general`.
-- الصورة التي زود بها المالك موجودة تحت Public ID `1000062284` في جذر الحساب؛ لم يتم تعيينها كصورة منتج أو شعار.
+- مجلدات العمل المتوقعة: `bartika-jeans/products` و`bartika-jeans/inventory` و`bartika-jeans/general`.
 - كود الرفع الموقّع موجود في `src/app/api/cloudinary/signature/route.ts` ويتطلب Admin.
-- رابط شعار المتجر الحالي من Cloud Name آخر (`dcuveyab9`). لا تغيّره قبل توفير ملف شعار معتمد ورفعه إلى حساب BARTIKA المعتمد.
-- هذه المجلدات تنظيم داخل الحساب المتصل وليست Product Environment مستقلة.
+- شعار المتجر الحالي يشير إلى Cloud Name قديم (`dcuveyab9`). لا تغيّره قبل توفير ملف شعار معتمد ورفعه إلى حساب BARTIKA المعتمد.
+- هذه المجلدات تنظيم داخل الحساب وليست Product Environments مستقلة.
 
 ## قاعدة البيانات والترحيلات
 
-الترحيلات `0001` إلى `0041` موجودة في `supabase/migrations` ومطبقة على قاعدة BARTIKA. آخر ترحيلات المتجر:
-- `0039`: لقطات بيانات المنتج والباركود والتكلفة، قفل idempotency وحماية حد الطلبات حسب الهاتف.
-- `0040`: انتهاء الحجز غير المدفوع بعد 24 ساعة.
-- `0041`: تنظيف الحجوزات قبل الطلبات الجديدة وتغييرات الحالة من Admin.
-
-راجع `supabase_migrations.schema_migrations` قبل تشغيل أي ترحيل. لا تشغّل هذه الترحيلات على مشروع ZIKR.
+- ترحيلات BARTIKA من `0001` حتى `0045` موجودة في `supabase/migrations`، وآخرها `0045_close_cash_session_active_profile.sql`.
+- تم التحقق من تفعيل RLS على كل جداول Schema `public` التي تم فحصها (32 جدولًا).
+- راجع `supabase_migrations.schema_migrations` قبل تشغيل أي ترحيل. لا تشغّل هذه الترحيلات على مشروع ZIKR.
+- جداول التشغيل فارغة حتى الآن: المنتجات والمقاسات والمبيعات والعملاء والطلبات وشركات الشحن ومناطق الشحن. يلزم إدخال بيانات المحل الفعلية قبل قبول اختبار تشغيل كامل.
 
 ## المتجر والطلبات
 
@@ -65,11 +64,11 @@
 - الطلب غير المدفوع بالكامل تنتهي مدة حجزه ويُحرر المخزون؛ الطلب ذو الدفع الجزئي لا يُلغى تلقائيًا.
 - لا يتم التسليم قبل تسجيل التحصيل الكامل؛ بعدها يُنشأ سجل بيع مرتبط بالطلب.
 - لا توجد بوابة دفع آلية؛ Admin يسجل التحصيل بعد التحقق الفعلي من Cash أو InstaPay أو Visa.
-- رسوم الشحن يحددها المحل عند التواصل مع العميل.
+- شركات الشحن والمناطق والرسوم غير مدخلة؛ يجب إدخال العقود والتسعير الحقيقي قبل تفعيل التوصيل.
 
 ## إعدادات المتجر
 
-يوجد صف إعدادات افتراضي باسم BARTIKA JEANS، مع روابط تواصل ووسيلة InstaPay. ما زال رقم هاتف الفرع والعنوان فارغين، ويلزم إدخالهما من `/settings` بعد اعتماد المالك.
+يوجد صف إعدادات افتراضي باسم BARTIKA JEANS، مع روابط تواصل ووسيلة InstaPay. ما زال مطلوبًا اعتماد رقم هاتف الفرع والعنوان وسياسة الشحن والاستبدال من المالك وإدخالها من `/settings`.
 
 لا تعدّل روابط الدفع أو السياسات أو رسوم التوصيل اعتمادًا على التخمين.
 
@@ -78,22 +77,29 @@
 - صفحة الدخول: `/login`.
 - صفحة الاستعادة: `/forgot-password`.
 - تدفق إعادة تعيين كلمة المرور يعود إلى الدومين الأساسي.
-- خدمة البريد الافتراضية في Supabase تجاوزت حد الإرسال أثناء اختبار الاستعادة. يلزم إعداد Custom SMTP موثوق وإبقاء Confirm Email مفعّلًا.
-- Leaked Password Protection لم يُفعّل بعد في Supabase Auth.
+- خدمة البريد الافتراضية في Supabase سبق أن تجاوزت حد الإرسال أثناء اختبار الاستعادة؛ يلزم التحقق من Custom SMTP قبل الاعتماد على رسائل الاستعادة.
+- Leaked Password Protection ما زال معطّلًا حسب Supabase Security Advisor؛ فعّله من إعدادات Auth في لوحة Supabase.
 
-## اختبارات ما قبل التشغيل
+## ملاحظات الأمان والاختبار
+
+- تحذيرات SECURITY DEFINER في Supabase Advisor تتضمن RPCs عامة مطلوبة للمتجر وRPCs محمية للمستخدمين المسجلين. لا تسحب صلاحية تنفيذها عشوائيًا؛ راجع التحقق الداخلي من الدور والملف الشخصي لكل دالة قبل تغيير grants.
+- لا توجد بيانات منتجات حقيقية أو أسعار شحن أو معاملات مالية في قاعدة البيانات؛ لا تختبر البيع أو الشحن باستخدام بيانات افتراضية على الإنتاج.
+- لا يوجد بيع Offline آمن أو مزامنة معاملات في هذا الإصدار.
+- لم يثبت بعد اختبار طابعة/قارئ باركود فعلي.
+
+## قائمة ما قبل التشغيل
 
 - [ ] تحويل GitHub repository إلى Private.
-- [ ] إضافة مفاتيح Cloudinary وتأكيد Folder Mode واختبار رفع صورة حقيقية.
+- [ ] إدخال `CLOUDINARY_API_SECRET` الصحيح في بيئات Vercel الثلاث وإعادة النشر، ثم اختبار رفع صورة حقيقية.
 - [ ] تفعيل Custom SMTP وLeaked Password Protection.
 - [ ] إدخال رقم الهاتف والعنوان وسياسات المتجر المعتمدة.
-- [ ] إنشاء المنتجات والمقاسات والألوان والباركود والأسعار والتكاليف الفعلية.
-- [ ] جرد افتتاحي وإدخال المخزون.
-- [ ] اختبار Admin / Manager / Seller والصلاحيات.
+- [ ] إدخال المنتجات والمقاسات والألوان والباركود والأسعار والتكاليف الفعلية.
+- [ ] إدخال الجرد الافتتاحي والمخزون الحقيقي.
+- [ ] إدخال شركات الشحن ومناطق التوصيل ورسومها من العقود الفعلية.
+- [ ] إنشاء حسابات Manager وSeller واختبار الصلاحيات.
 - [ ] اختبار البيع والدفع المختلط والخصم والآجل والتحصيل.
 - [ ] اختبار ورديتين نقديتين وإغلاق كل درج.
 - [ ] اختبار الطلب الإلكتروني والحجز والتحصيل الجزئي والكامل والإلغاء والتسليم.
 - [ ] اختبار الطابعة والباركود والماسح على أجهزة المحل.
 - [ ] إعداد نسخة احتياطية مشفرة وتنفيذ استعادة مثبتة.
 
-لا يوجد بيع Offline آمن أو مزامنة معاملات في هذا الإصدار.
