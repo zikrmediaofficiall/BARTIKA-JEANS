@@ -15,7 +15,7 @@ create table public.manager_permissions (
   permission_key text not null check (permission_key in (
     'dashboard.read',
     'sales.read_all',
-    'inventory.read_movements',
+    'inventory.read',
     'purchases.read',
     'stocktake.read',
     'cash.read_all',
@@ -23,8 +23,6 @@ create table public.manager_permissions (
     'customers.read',
     'staff.read',
     'exchanges.read',
-    'orders.read',
-    'orders.manage',
     'reports.read'
   )),
   granted_by uuid not null references public.profiles(id),
@@ -88,7 +86,7 @@ declare
   v_allowed constant text[] := array[
     'dashboard.read',
     'sales.read_all',
-    'inventory.read_movements',
+    'inventory.read',
     'purchases.read',
     'stocktake.read',
     'cash.read_all',
@@ -96,8 +94,6 @@ declare
     'customers.read',
     'staff.read',
     'exchanges.read',
-    'orders.read',
-    'orders.manage',
     'reports.read'
   ];
 begin
@@ -172,7 +168,7 @@ create policy "manager read payments with permission"
 
 create policy "manager read stock movements with permission"
   on public.stock_movements for select to authenticated
-  using (public.has_permission('inventory.read_movements') or actor_id = auth.uid());
+  using (public.has_permission('inventory.read') or actor_id = auth.uid());
 
 create policy "manager read suppliers with permission"
   on public.suppliers for select to authenticated
@@ -244,3 +240,7 @@ create trigger audit_manager_permissions
 
 -- Allow managers with explicit report access to see aggregate/report source rows only.
 -- Cost snapshots and product_costs remain restricted to Admin.
+
+create policy "manager report sales with permission"
+  on public.sales for select to authenticated
+  using (public.has_permission('reports.read'));
