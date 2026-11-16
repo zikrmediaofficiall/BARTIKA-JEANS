@@ -31,6 +31,8 @@ const productSchema = z.object({
   cost: z.coerce.number().finite().min(0),
   price: z.coerce.number().finite().positive(),
   qty: z.coerce.number().int().min(0),
+  image_url: z.union([z.string().url(), z.literal("")]).optional(),
+  image_public_id: z.union([z.string().trim().max(255), z.literal("")]).optional(),
 });
 
 export async function addProduct(formData: FormData) {
@@ -52,6 +54,33 @@ export async function addProduct(formData: FormData) {
   });
 
   if (error) throw new Error(error.message);
+
+  const imageUrl = product.image_url || "";
+  const imagePublicId = product.image_public_id || "";
+  if (imageUrl || imagePublicId) {
+    let imageHost = "";
+    try {
+      imageHost = new URL(imageUrl).hostname;
+    } catch {
+      throw new Error("رابط صورة المنتج غير صالح");
+    }
+    if (
+      imageHost !== "res.cloudinary.com" ||
+      !imageUrl.includes("/image/upload/") ||
+      !imagePublicId.startsWith("bartika-jeans/products/")
+    ) {
+      throw new Error("صورة المنتج يجب أن تكون مرفوعة إلى مجلد Cloudinary المخصص");
+    }
+
+    const { error: imageError } = await supabase
+      .from("products")
+      .update({ image_url: imageUrl, image_public_id: imagePublicId })
+      .eq("id", data.product_id);
+    if (imageError) {
+      throw new Error("تم إنشاء المنتج لكن تعذر حفظ مرجع الصورة: " + imageError.message);
+    }
+  }
+
   revalidatePath("/products");
   revalidatePath("/inventory");
   return data;
