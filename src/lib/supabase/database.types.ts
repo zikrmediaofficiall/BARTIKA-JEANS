@@ -1098,6 +1098,74 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_payments: {
+        Row: {
+          amount: number
+          cash_session_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          idempotency_key: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          purchase_invoice_id: string
+          reference: string | null
+          supplier_id: string
+        }
+        Insert: {
+          amount: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          idempotency_key: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          purchase_invoice_id: string
+          reference?: string | null
+          supplier_id: string
+        }
+        Update: {
+          amount?: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          idempotency_key?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          purchase_invoice_id?: string
+          reference?: string | null
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_payments_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payments_purchase_invoice_id_fkey"
+            columns: ["purchase_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -1235,6 +1303,17 @@ export type Database = {
           p_paid?: number
           p_reference: string
           p_supplier_id: string
+        }
+        Returns: Json
+      }
+      record_supplier_payment: {
+        Args: {
+          p_amount: number
+          p_cash_session_id: string
+          p_idempotency_key: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_purchase_invoice_id: string
+          p_reference: string
         }
         Returns: Json
       }
