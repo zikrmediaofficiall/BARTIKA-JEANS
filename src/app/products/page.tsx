@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { addProduct } from "@/app/actions";
+import { CloudinaryProductImage } from "@/components/cloudinary-product-image";
 
 export default async function Products() {
   const { supabase, user, profile } = await getSessionContext();
@@ -11,7 +12,7 @@ export default async function Products() {
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id,name,sku,category,sale_price,is_active,product_variants(id,barcode,size,color,inventory(quantity))",
+      "id,name,sku,category,sale_price,image_url,product_variants(id,barcode,size,color,inventory(quantity))",
     )
     .order("created_at", { ascending: false });
 
@@ -72,6 +73,7 @@ export default async function Products() {
             required
           />
         </label>
+        <CloudinaryProductImage />
         <button className="btn btn-primary self-end">حفظ الصنف</button>
       </form>
 
@@ -79,6 +81,7 @@ export default async function Products() {
         <table>
           <thead>
             <tr>
+              <th>الصورة</th>
               <th>الصنف</th>
               <th>SKU</th>
               <th>سعر البيع</th>
@@ -88,6 +91,14 @@ export default async function Products() {
           <tbody>
             {(data || []).map((product) => (
               <tr key={product.id}>
+                <td>
+                  {product.image_url ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={product.image_url} alt={product.name} className="h-14 w-14 rounded-lg object-cover" />
+                    </>
+                  ) : "—"}
+                </td>
                 <td>{product.name}</td>
                 <td>{product.sku}</td>
                 <td>{Number(product.sale_price).toFixed(2)} ج.م</td>
