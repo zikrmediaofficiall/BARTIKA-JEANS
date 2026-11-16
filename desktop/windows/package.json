@@ -21,7 +21,7 @@
     "compression": "normal",
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64", "ia32"] }],
-      "artifactName": "BARTIKA-JEANS-${version}-${arch}-Setup.${ext}"
+      "artifactName": "BARTIKA-JEANS-${version}-Windows-Setup.${ext}"
     },
     "nsis": {
       "oneClick": false,
