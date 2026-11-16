@@ -69,9 +69,12 @@ Deno.serve(async (request: Request) => {
     }
 
     if (
-      !email.includes("@") ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      email.length > 254 ||
       password.length < 12 ||
+      password.length > 128 ||
       !fullName ||
+      fullName.length > 160 ||
       !Number.isFinite(discount) ||
       discount < 0 ||
       discount > 100
@@ -86,10 +89,13 @@ Deno.serve(async (request: Request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // This is an admin-provisioned account with a temporary password entered by
+    // the owner. Confirm it immediately; the employee must change it after first login.
+    // createUser does not send a confirmation email.
     const { data, error } = await admin.auth.admin.createUser({
       email,
       password,
-      email_confirm: false,
+      email_confirm: true,
       user_metadata: { full_name: fullName },
     });
 
