@@ -12,7 +12,7 @@ export default async function OnlineOrders() {
   ] = await Promise.all([
     supabase
       .from("online_orders")
-      .select("id,order_number,customer_name,customer_phone,delivery_method,delivery_address,customer_notes,status,subtotal,paid,due,payment_status,created_at,expires_at,online_order_items(id,product_name_snapshot,size_snapshot,color_snapshot,quantity,unit_price,line_total)")
+      .select("id,order_number,customer_name,customer_phone,delivery_method,delivery_address,customer_notes,status,subtotal,total,shipping_amount,shipping_zone_name_snapshot,shipping_company_name_snapshot,payment_preference,paid,due,payment_status,created_at,expires_at,online_order_items(id,product_name_snapshot,size_snapshot,color_snapshot,quantity,unit_price,line_total)")
       .order("created_at", { ascending: false })
       .limit(100),
     supabase
@@ -99,6 +99,8 @@ export default async function OnlineOrders() {
                 <div><span className="muted">الهاتف: </span><b dir="ltr">{order.customer_phone}</b></div>
                 <div><span className="muted">الاستلام: </span><b>{order.delivery_method === "delivery" ? "توصيل" : "استلام من الفرع"}</b></div>
                 {order.delivery_method === "delivery" ? <div><span className="muted">العنوان: </span><b>{order.delivery_address}</b></div> : null}
+                {order.delivery_method === "delivery" ? <div><span className="muted">شركة الشحن / المنطقة: </span><b>{order.shipping_company_name_snapshot || "—"} · {order.shipping_zone_name_snapshot || "—"}</b></div> : null}
+                <div><span className="muted">طريقة الدفع المفضلة: </span><b>{order.payment_preference === "cod" ? "الدفع عند الاستلام" : order.payment_preference === "pickup_cash" ? "نقدًا عند الاستلام من الفرع" : order.payment_preference === "instapay" ? "InstaPay" : "Visa"}</b></div>
                 {order.customer_notes ? <div className="sm:col-span-2"><span className="muted">ملاحظات: </span>{order.customer_notes}</div> : null}
               </div>
 
@@ -119,8 +121,10 @@ export default async function OnlineOrders() {
                 </table>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl bg-slate-50 p-3"><p className="muted text-xs">إجمالي الطلب</p><b>{money(Number(order.subtotal))}</b></div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                <div className="rounded-xl bg-slate-50 p-3"><p className="muted text-xs">قيمة المنتجات</p><b>{money(Number(order.subtotal))}</b></div>
+                <div className="rounded-xl bg-blue-50 p-3"><p className="muted text-xs">الشحن</p><b>{money(Number(order.shipping_amount))}</b></div>
+                <div className="rounded-xl bg-slate-50 p-3"><p className="muted text-xs">إجمالي الطلب</p><b>{money(Number(order.total))}</b></div>
                 <div className="rounded-xl bg-emerald-50 p-3"><p className="muted text-xs">المدفوع الصافي</p><b>{money(Number(order.paid))}</b></div>
                 <div className="rounded-xl bg-amber-50 p-3"><p className="muted text-xs">المتبقي</p><b>{money(Number(order.due))}</b></div>
               </div>
