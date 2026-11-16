@@ -50,6 +50,21 @@ export default async function InvoiceDetail({
       .maybeSingle(),
   ]);
 
+  const [{ data: onlinePayments }, { data: onlineRefunds }] = sale.source_online_order_id
+    ? await Promise.all([
+        supabase
+          .from("online_order_payments")
+          .select("payment_method,amount,reference,created_at")
+          .eq("order_id", sale.source_online_order_id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("online_order_refunds")
+          .select("payment_method,amount,reference,created_at")
+          .eq("order_id", sale.source_online_order_id)
+          .order("created_at", { ascending: true }),
+      ])
+    : [{ data: [] }, { data: [] }];
+
   const storeName = storeSettings?.store_name || "BARTIKA JEANS";
   const storeNameAr = storeSettings?.store_name_ar || "بارتيكا جينز";
   const logoUrl =
@@ -167,14 +182,25 @@ export default async function InvoiceDetail({
         <div className="mt-5 print:hidden">
           <b className="text-sm">وسائل الدفع</b>
           {(payments || []).map((payment, index) => (
-            <p key={index} className="muted text-sm">
-              {payment.method === "cash"
-                ? "كاش"
-                : payment.method === "instapay"
-                  ? "InstaPay"
-                  : "فيزا"}{" "}
-              — {fmt(Number(payment.amount))}
+            <p key={"pos-" + index} className="muted text-sm">
+              {payment.method === "cash" ? "كاش" : payment.method === "instapay" ? "InstaPay" : "فيزا"}
+              {" — "}{fmt(Number(payment.amount))}
               {payment.reference ? ` · ${payment.reference}` : ""}
+            </p>
+          ))}
+          {(onlinePayments || []).map((payment, index) => (
+            <p key={"online-" + index} className="muted text-sm">
+              {payment.payment_method === "cash" ? "كاش" : payment.payment_method === "instapay" ? "InstaPay" : "فيزا"}
+              {" — "}{fmt(Number(payment.amount))}
+              {payment.reference ? ` · ${payment.reference}` : ""}
+              <span className="muted"> · طلب إلكتروني</span>
+            </p>
+          ))}
+          {(onlineRefunds || []).map((refund, index) => (
+            <p key={"refund-" + index} className="muted text-sm text-red-700">
+              رد {refund.payment_method === "cash" ? "كاش" : refund.payment_method === "instapay" ? "InstaPay" : "فيزا"}
+              {" — −"}{fmt(Number(refund.amount))}
+              {refund.reference ? ` · ${refund.reference}` : ""}
             </p>
           ))}
         </div>
