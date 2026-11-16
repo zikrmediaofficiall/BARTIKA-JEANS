@@ -288,8 +288,6 @@ export async function receivePurchase(formData: FormData) {
   const supplierId = String(formData.get("supplier_id") || "");
   const reference = String(formData.get("reference") || "").trim().slice(0, 120);
   const rawItems = String(formData.get("items_json") || "");
-  const paid = Number(formData.get("paid") || 0);
-
   if (!z.string().uuid().safeParse(supplierId).success) {
     throw new Error("اختر المورد بصورة صحيحة");
   }
@@ -312,23 +310,11 @@ export async function receivePurchase(formData: FormData) {
     throw new Error("لا تكرر نفس المقاس/اللون في أكثر من سطر داخل الفاتورة");
   }
 
-  if (!Number.isFinite(paid) || paid < 0) {
-    throw new Error("قيمة المدفوع للمورد غير صحيحة");
-  }
-
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.quantity * item.unit_cost,
-    0,
-  );
-  if (paid > subtotal) {
-    throw new Error("المدفوع لا يمكن أن يتجاوز إجمالي فاتورة الشراء");
-  }
-
   const { error } = await supabase.rpc("receive_purchase", {
     p_supplier_id: supplierId,
     p_reference: reference,
     p_items: items,
-    p_paid: paid,
+    p_paid: 0,
   });
   if (error) throw new Error(error.message);
 
@@ -530,6 +516,49 @@ export async function collectSaleDue(formData: FormData) {
 
   revalidatePath("/customers");
   revalidatePath("/invoices");
+  revalidatePath("/cash");
+  revalidatePath("/reports");
+}
+
+export async function recordSupplierPayment(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const invoiceId = String(formData.get("purchase_invoice_id") || "");
+  const amount = Number(formData.get("amount"));
+  const method = z.enum(["cash", "instapay", "visa"]).parse(
+    String(formData.get("method") || ""),
+  );
+  const reference = String(formData.get("reference") || "").trim();
+  const cashSessionId = String(formData.get("cash_session_id") || "").trim();
+  const idempotencyKey = String(formData.get("idempotency_key") || "");
+
+  if (!z.string().uuid().safeParse(invoiceId).success) {
+    throw new Error("فاتورة المورد غير صحيحة");
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("قيمة السداد غير صحيحة");
+  }
+  if (!z.string().uuid().safeParse(idempotencyKey).success) {
+    throw new Error("معرّف السداد غير صالح؛ حدّث الصفحة وأعد المحاولة");
+  }
+  if (method !== "cash" && reference.length < 3) {
+    throw new Error("مرجع التحويل أو الفيزا مطلوب");
+  }
+  if (cashSessionId && (!z.string().uuid().safeParse(cashSessionId).success || method !== "cash")) {
+    throw new Error("اختيار درج الكاش غير صالح");
+  }
+
+  const { error } = await supabase.rpc("record_supplier_payment", {
+    p_purchase_invoice_id: invoiceId,
+    p_amount: amount,
+    p_method: method,
+    p_reference: reference,
+    ...(cashSessionId ? { p_cash_session_id: cashSessionId } : {}),
+    p_idempotency_key: idempotencyKey,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/purchases");
+  revalidatePath("/suppliers");
   revalidatePath("/cash");
   revalidatePath("/reports");
 }

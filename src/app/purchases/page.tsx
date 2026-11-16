@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { requirePermission } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { addSupplier } from "@/app/actions";
 import { PurchaseInvoiceForm } from "./purchase-invoice-form";
+import { SupplierPaymentForm } from "./supplier-payment-form";
 
 export default async function Purchases() {
   const { supabase, user, profile } = await requirePermission("purchases.read");
@@ -10,6 +12,7 @@ export default async function Purchases() {
     { data: suppliers, error: suppliersError },
     { data: variants, error: variantsError },
     { data: invoices, error: invoicesError },
+    { data: openSessions, error: sessionsError },
   ] = await Promise.all([
     supabase.from("suppliers").select("id,name,phone").order("name"),
     supabase
@@ -18,14 +21,24 @@ export default async function Purchases() {
       .order("created_at", { ascending: false }),
     supabase
       .from("purchase_invoices")
-      .select("id,invoice_reference,subtotal,paid,due,status,created_at")
+      .select("id,supplier_id,invoice_reference,subtotal,paid,due,status,created_at,suppliers(name)")
       .order("created_at", { ascending: false })
       .limit(50),
+    isAdmin
+      ? supabase
+          .from("cash_sessions")
+          .select("id,seller_id,opened_at")
+          .eq("status", "open")
+          .order("opened_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
-  if (suppliersError || variantsError || invoicesError) {
+  if (suppliersError || variantsError || invoicesError || sessionsError) {
     throw new Error(
-      suppliersError?.message || variantsError?.message || invoicesError?.message,
+      suppliersError?.message ||
+        variantsError?.message ||
+        invoicesError?.message ||
+        sessionsError?.message,
     );
   }
 
@@ -53,9 +66,19 @@ export default async function Purchases() {
     };
   });
 
+  const tillOptions = (openSessions || []).map((session) => ({
+    id: session.id,
+    label: `بائع ${session.seller_id.slice(0, 8)} · ${new Date(session.opened_at).toLocaleTimeString("ar-EG")}`,
+  }));
+
   return (
     <Shell user={user.email || ""} role={profile.role}>
-      <h2 className="mb-5 text-2xl font-black">المشتريات والموردون</h2>
+      <div className="mb-5">
+        <h2 className="text-2xl font-black">المشتريات والموردون</h2>
+        <p className="muted mt-1 text-sm">
+          استلام المخزون والفواتير، ثم تسجيل سداد المورد كحركة مستقلة في كشف الحساب.
+        </p>
+      </div>
 
       {isAdmin ? (
         <>
@@ -88,34 +111,67 @@ export default async function Purchases() {
         </>
       ) : (
         <p className="panel mb-5 p-4 text-sm text-slate-600">
-          صلاحية قراءة فقط. إضافة الموردين واستلام المشتريات متاحان من حساب Admin.
+          صلاحية قراءة فقط. إضافة الموردين واستلام المشتريات وسداد المورد متاح من حساب Admin.
         </p>
       )}
 
       <div className="panel table-wrap p-4">
-        <h3 className="mb-3 font-black">آخر فواتير الشراء</h3>
+        <h3 className="mb-3 font-black">آخر فواتير الشراء وكشوف الموردين</h3>
         <table>
           <thead>
             <tr>
+              <th>المورد</th>
               <th>المرجع</th>
               <th>التاريخ</th>
               <th>الإجمالي</th>
               <th>المدفوع</th>
               <th>المتبقي</th>
               <th>الحالة</th>
+              {isAdmin ? <th>تسجيل سداد</th> : null}
             </tr>
           </thead>
           <tbody>
-            {(invoices || []).map((invoice) => (
-              <tr key={invoice.id}>
-                <td>{invoice.invoice_reference || invoice.id.slice(0, 8)}</td>
-                <td>{new Date(invoice.created_at).toLocaleDateString("ar-EG")}</td>
-                <td>{Number(invoice.subtotal).toFixed(2)} ج.م</td>
-                <td>{Number(invoice.paid).toFixed(2)} ج.م</td>
-                <td>{Number(invoice.due).toFixed(2)} ج.م</td>
-                <td>{invoice.status}</td>
-              </tr>
-            ))}
+            {(invoices || []).map((invoice) => {
+              const supplier = Array.isArray(invoice.suppliers)
+                ? invoice.suppliers[0]
+                : invoice.suppliers;
+              return (
+                <tr key={invoice.id}>
+                  <td>
+                    <Link
+                      className="font-bold text-emerald-800 underline"
+                      href={"/suppliers/" + invoice.supplier_id}
+                    >
+                      {supplier?.name || "مورد"}
+                    </Link>
+                  </td>
+                  <td>{invoice.invoice_reference || invoice.id.slice(0, 8)}</td>
+                  <td>{new Date(invoice.created_at).toLocaleDateString("ar-EG")}</td>
+                  <td>{Number(invoice.subtotal).toFixed(2)} ج.م</td>
+                  <td>{Number(invoice.paid).toFixed(2)} ج.م</td>
+                  <td className={Number(invoice.due) > 0 ? "font-bold text-amber-800" : ""}>
+                    {Number(invoice.due).toFixed(2)} ج.م
+                  </td>
+                  <td>{invoice.status}</td>
+                  {isAdmin ? (
+                    <td>
+                      {Number(invoice.due) > 0.009 ? (
+                        <SupplierPaymentForm
+                          invoiceId={invoice.id}
+                          due={Number(invoice.due)}
+                          tills={tillOptions}
+                        />
+                      ) : (
+                        <span className="text-xs text-emerald-800">مسددة بالكامل</span>
+                      )}
+                    </td>
+                  ) : null}
+                </tr>
+              );
+            })}
+            {!invoices?.length ? (
+              <tr><td colSpan={isAdmin ? 8 : 7} className="py-6 text-center muted">لا توجد فواتير شراء حتى الآن.</td></tr>
+            ) : null}
           </tbody>
         </table>
       </div>
