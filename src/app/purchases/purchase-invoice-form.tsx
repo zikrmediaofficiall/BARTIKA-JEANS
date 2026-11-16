@@ -28,7 +28,6 @@ export function PurchaseInvoiceForm({
 }) {
   const [lines, setLines] = useState<PurchaseLine[]>([emptyLine("line-1")]);
   const [nextLineId, setNextLineId] = useState(2);
-  const [paid, setPaid] = useState("0");
 
   const parsedLines = useMemo(
     () =>
@@ -53,17 +52,12 @@ export function PurchaseInvoiceForm({
     (sum, line) => sum + line.quantity * line.unit_cost,
     0,
   );
-  const paidAmount = Number(paid || 0);
-  const due = subtotal - paidAmount;
   const duplicateVariants =
     new Set(parsedLines.map((line) => line.variant_id)).size !== parsedLines.length;
   const ready =
     parsedLines.length === lines.length &&
     parsedLines.length > 0 &&
-    !duplicateVariants &&
-    Number.isFinite(paidAmount) &&
-    paidAmount >= 0 &&
-    paidAmount <= subtotal;
+    !duplicateVariants;
 
   function updateLine(id: string, patch: Partial<PurchaseLine>) {
     setLines((current) =>
@@ -203,28 +197,15 @@ export function PurchaseInvoiceForm({
         ))}
       </div>
 
-      <div className="grid gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-3">
+      <div className="grid gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">
         <div>
-          <p className="muted text-xs">إجمالي الفاتورة</p>
+          <p className="muted text-xs">إجمالي فاتورة الشراء</p>
           <b className="text-lg">{subtotal.toFixed(2)} ج.م</b>
         </div>
-        <label className="block text-sm font-bold">
-          المدفوع للمورد
-          <input
-            className="field mt-1"
-            name="paid"
-            type="number"
-            min="0"
-            max={subtotal}
-            step="0.01"
-            value={paid}
-            onChange={(event) => setPaid(event.target.value)}
-            required
-          />
-        </label>
         <div>
-          <p className="muted text-xs">المتبقي للمورد</p>
-          <b className="text-lg">{Number.isFinite(due) ? due.toFixed(2) : "—"} ج.م</b>
+          <p className="muted text-xs">المتبقي بعد الاستلام</p>
+          <b className="text-lg">{subtotal.toFixed(2)} ج.م</b>
+          <p className="muted mt-1 text-xs">يتم تسجيل أي سداد لاحق من كشف حساب المورد بشكل منفصل وموثق.</p>
         </div>
       </div>
 
@@ -240,7 +221,7 @@ export function PurchaseInvoiceForm({
       ) : null}
 
       <button className="btn btn-primary w-full sm:w-auto" disabled={!ready}>
-        اعتماد الفاتورة وتحديث جميع أرصدة المخزون
+        اعتماد الفاتورة واستلام المخزون (السداد لاحقًا من كشف المورد)
       </button>
     </form>
   );
