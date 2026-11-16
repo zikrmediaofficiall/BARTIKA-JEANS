@@ -90,7 +90,7 @@ begin
  update public.online_orders set paid=v_paid,due=v_due,payment_status=case when v_paid<=0.009 then 'unpaid' when v_due<=0.009 then 'paid' else 'partial' end,updated_at=now() where id=p_order_id;
  insert into public.audit_logs(actor_id,action,entity_type,entity_id,details) values(auth.uid(),'record_online_order_refund','online_order',p_order_id,jsonb_build_object('refund_id',v_id,'amount',p_amount,'method',p_method,'cash_session_id',p_cash_session_id));
  return jsonb_build_object('refund_id',v_id,'paid',v_paid,'due',v_due,'duplicate',false);
-end; $$
+end; $;
 CREATE OR REPLACE FUNCTION public.attach_sale_to_open_cash_session()
  RETURNS trigger
  LANGUAGE plpgsql
