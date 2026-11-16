@@ -1580,6 +1580,13 @@ export type Database = {
           whatsapp_url: string
         }[]
       }
+      get_public_instapay_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          instapay_ipa: string | null
+          instapay_url: string | null
+        }[]
+      }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       open_cash_session: { Args: { p_opening_cash?: number }; Returns: string }
