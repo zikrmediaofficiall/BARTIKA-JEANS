@@ -16,6 +16,7 @@ import {
   Truck,
   Wallet,
   ScanLine,
+  QrCode,
 } from "lucide-react";
 
 const links = [
@@ -23,6 +24,7 @@ const links = [
   ["/pos", "الكاشير", ShoppingCart],
   ["/products", "المنتجات", Package],
   ["/barcodes", "الباركود والملصقات", ScanLine],
+  ["/qr", "أكواد QR", QrCode],
   ["/inventory", "المخزون والجرد", Warehouse],
   ["/purchases", "المشتريات", Truck],
   ["/online-orders", "طلبات المتجر", ShoppingBag],
@@ -71,7 +73,7 @@ export function Shell({
           </div>
         </div>
         <nav className="grid grid-cols-2 gap-2 md:grid-cols-1">
-          {links.filter(([href]) => (href !== "/online-orders" || role === "admin") && (href !== "/barcodes" || role === "admin")).map(([href, label, Icon]) => (
+          {links.filter(([href]) => (href !== "/online-orders" || role === "admin") && (href !== "/barcodes" || role === "admin") && (href !== "/qr" || role === "admin")).map(([href, label, Icon]) => (
             <Link
               key={href}
               href={href}
