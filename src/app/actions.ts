@@ -248,37 +248,64 @@ export async function addSupplier(formData: FormData) {
   revalidatePath("/purchases");
 }
 
+const purchaseItemSchema = z.object({
+  variant_id: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  unit_cost: z.number().finite().min(0),
+});
+
 export async function receivePurchase(formData: FormData) {
   const { supabase } = await requireAdmin();
-  const variantId = String(formData.get("variant_id") || "");
   const supplierId = String(formData.get("supplier_id") || "");
-  const quantity = Number(formData.get("quantity"));
-  const unitCost = Number(formData.get("unit_cost"));
-  const reference = String(formData.get("reference") || "");
+  const reference = String(formData.get("reference") || "").trim().slice(0, 120);
+  const rawItems = String(formData.get("items_json") || "");
   const paid = Number(formData.get("paid") || 0);
 
-  if (
-    !variantId ||
-    !supplierId ||
-    !Number.isInteger(quantity) ||
-    quantity < 1 ||
-    !Number.isFinite(unitCost) ||
-    unitCost < 0 ||
-    !Number.isFinite(paid) ||
-    paid < 0
-  ) {
-    throw new Error("راجع بيانات فاتورة الشراء");
+  if (!z.string().uuid().safeParse(supplierId).success) {
+    throw new Error("اختر المورد بصورة صحيحة");
+  }
+
+  let decodedItems: unknown;
+  try {
+    decodedItems = JSON.parse(rawItems);
+  } catch {
+    throw new Error("تفاصيل بنود فاتورة الشراء غير صالحة");
+  }
+
+  const parsedItems = z.array(purchaseItemSchema).min(1).max(100).safeParse(decodedItems);
+  if (!parsedItems.success) {
+    throw new Error("راجع الأصناف والكميات وتكلفة كل قطعة");
+  }
+
+  const items = parsedItems.data;
+  const variantIds = items.map((item) => item.variant_id);
+  if (new Set(variantIds).size !== variantIds.length) {
+    throw new Error("لا تكرر نفس المقاس/اللون في أكثر من سطر داخل الفاتورة");
+  }
+
+  if (!Number.isFinite(paid) || paid < 0) {
+    throw new Error("قيمة المدفوع للمورد غير صحيحة");
+  }
+
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.quantity * item.unit_cost,
+    0,
+  );
+  if (paid > subtotal) {
+    throw new Error("المدفوع لا يمكن أن يتجاوز إجمالي فاتورة الشراء");
   }
 
   const { error } = await supabase.rpc("receive_purchase", {
     p_supplier_id: supplierId,
     p_reference: reference,
-    p_items: [{ variant_id: variantId, quantity, unit_cost: unitCost }],
+    p_items: items,
     p_paid: paid,
   });
   if (error) throw new Error(error.message);
+
   revalidatePath("/purchases");
   revalidatePath("/inventory");
+  revalidatePath("/reports");
 }
 
 export async function startStocktake(formData: FormData) {
