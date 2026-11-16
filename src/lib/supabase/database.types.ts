@@ -1421,6 +1421,20 @@ export type Database = {
           variant_id: string
         }[]
       }
+      get_public_store_settings: {
+        Args: never
+        Returns: {
+          address: string
+          facebook_url: string
+          instagram_url: string
+          logo_url: string
+          phone: string
+          store_name: string
+          store_name_ar: string
+          tiktok_url: string
+          whatsapp_url: string
+        }[]
+      }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       open_cash_session: { Args: { p_opening_cash?: number }; Returns: string }
