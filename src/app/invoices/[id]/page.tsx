@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { Shell } from "@/components/shell";
@@ -27,7 +28,11 @@ export default async function InvoiceDetail({
 
   if (!sale) notFound();
 
-  const [{ data: items }, { data: payments }] = await Promise.all([
+  const [
+    { data: items },
+    { data: payments },
+    { data: storeSettings },
+  ] = await Promise.all([
     supabase
       .from("sale_items")
       .select(
@@ -38,7 +43,18 @@ export default async function InvoiceDetail({
       .from("payments")
       .select("method,amount,reference")
       .eq("sale_id", id),
+    supabase
+      .from("store_settings")
+      .select("store_name,store_name_ar,phone,address,logo_url")
+      .eq("id", 1)
+      .maybeSingle(),
   ]);
+
+  const storeName = storeSettings?.store_name || "BARTIKA JEANS";
+  const storeNameAr = storeSettings?.store_name_ar || "بارتيكا جينز";
+  const logoUrl =
+    storeSettings?.logo_url ||
+    "https://res.cloudinary.com/dcuveyab9/image/upload/v1794812757/bartika-jeans/general/bartika-brand-logo.webp";
 
   return (
     <Shell user={user.email || ""} role={profile?.role || "seller"}>
@@ -53,14 +69,27 @@ export default async function InvoiceDetail({
         <header className="mb-6 flex items-center justify-between border-b-2 border-gold-400 pb-5">
           <div>
             <h1 className="text-2xl font-black text-emerald-950">
-              BARTIKA JEANS
+              {storeNameAr}
             </h1>
-            <p className="text-sm text-gold-500">فاتورة بيع</p>
+            <p className="text-sm text-gold-500">{storeName} · فاتورة بيع</p>
+            {storeSettings?.phone ? (
+              <p className="mt-1 text-xs text-slate-500" dir="ltr">
+                {storeSettings.phone}
+              </p>
+            ) : null}
+            {storeSettings?.address ? (
+              <p className="mt-1 text-xs text-slate-500">
+                {storeSettings.address}
+              </p>
+            ) : null}
           </div>
-          <img
-            src="/bartika-logo.svg"
-            alt="BARTIKA"
-            className="h-20 w-20"
+          <Image
+            src={logoUrl}
+            alt={`شعار ${storeName}`}
+            width={80}
+            height={80}
+            className="h-20 w-20 rounded-lg object-contain"
+            unoptimized
           />
         </header>
 
@@ -132,7 +161,7 @@ export default async function InvoiceDetail({
             الاستبدال الطوعي خلال 3 أيام للسلع السليمة وفق سياسة المحل، مع
             الحفاظ على الحقوق القانونية للمستهلك.
           </p>
-          <p className="mt-2">شكرًا لزيارتكم BARTIKA JEANS</p>
+          <p className="mt-2">شكرًا لزيارتكم {storeName}</p>
         </div>
 
         <div className="mt-5 print:hidden">
