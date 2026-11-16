@@ -77,11 +77,6 @@ export default async function OnlineOrders() {
                       انتهاء الحجز: {new Date(order.expires_at).toLocaleString("ar-EG")}
                     </p>
                   ) : null}
-                  {(order.status === "pending" || order.status === "confirmed") && Number(order.paid) <= 0.009 ? (
-                    <p className="mt-1 text-xs text-amber-800">
-                      انتهاء الحجز: {new Date(order.expires_at).toLocaleString("ar-EG")}
-                    </p>
-                  ) : null}
                 </div>
                 <span className={"rounded-full px-3 py-2 text-xs font-bold " + (
                   order.status === "pending" ? "bg-amber-100 text-amber-900" :
