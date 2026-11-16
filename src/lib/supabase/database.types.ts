@@ -96,24 +96,72 @@ export type Database = {
           },
         ]
       }
-      customers: {
+      customer_credit_accounts: {
         Row: {
-          created_at: string
-          id: string
-          name: string
-          phone: string | null
+          credit_limit: number
+          customer_id: string
+          updated_at: string
+          updated_by: string | null
         }
         Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          phone?: string | null
+          credit_limit?: number
+          customer_id: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Update: {
+          credit_limit?: number
+          customer_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_credit_accounts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credit_accounts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
           created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
           id?: string
           name?: string
+          notes?: string | null
           phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -413,29 +461,42 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          cash_session_id: string | null
           created_at: string
           id: string
+          idempotency_key: string | null
           method: Database["public"]["Enums"]["payment_method"]
           reference: string | null
           sale_id: string
         }
         Insert: {
           amount: number
+          cash_session_id?: string | null
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           method: Database["public"]["Enums"]["payment_method"]
           reference?: string | null
           sale_id: string
         }
         Update: {
           amount?: number
+          cash_session_id?: string | null
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           method?: Database["public"]["Enums"]["payment_method"]
           reference?: string | null
           sale_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_sale_id_fkey"
             columns: ["sale_id"]
@@ -1128,6 +1189,16 @@ export type Database = {
       approve_stocktake: { Args: { p_stocktake_id: string }; Returns: Json }
       close_cash_session: {
         Args: { p_counted_cash: number; p_session_id: string }
+        Returns: Json
+      }
+      collect_sale_due: {
+        Args: {
+          p_amount: number
+          p_idempotency_key: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_reference: string
+          p_sale_id: string
+        }
         Returns: Json
       }
       create_sale: {
