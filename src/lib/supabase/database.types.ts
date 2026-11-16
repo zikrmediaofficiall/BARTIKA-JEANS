@@ -121,6 +121,7 @@ export type Database = {
         Row: {
           exchange_id: string
           id: string
+          original_sale_item_id: string | null
           quantity: number
           replacement_variant_id: string | null
           returned_variant_id: string
@@ -128,6 +129,7 @@ export type Database = {
         Insert: {
           exchange_id: string
           id?: string
+          original_sale_item_id?: string | null
           quantity: number
           replacement_variant_id?: string | null
           returned_variant_id: string
@@ -135,6 +137,7 @@ export type Database = {
         Update: {
           exchange_id?: string
           id?: string
+          original_sale_item_id?: string | null
           quantity?: number
           replacement_variant_id?: string | null
           returned_variant_id?: string
@@ -145,6 +148,13 @@ export type Database = {
             columns: ["exchange_id"]
             isOneToOne: false
             referencedRelation: "exchanges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exchange_items_original_sale_item_id_fkey"
+            columns: ["original_sale_item_id"]
+            isOneToOne: false
+            referencedRelation: "sale_items"
             referencedColumns: ["id"]
           },
           {
@@ -177,10 +187,69 @@ export type Database = {
           },
         ]
       }
+      exchange_settlements: {
+        Row: {
+          amount: number
+          cash_session_id: string | null
+          created_at: string
+          created_by: string
+          direction: string
+          exchange_id: string
+          id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by: string
+          direction: string
+          exchange_id: string
+          id?: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by?: string
+          direction?: string
+          exchange_id?: string
+          id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exchange_settlements_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exchange_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exchange_settlements_exchange_id_fkey"
+            columns: ["exchange_id"]
+            isOneToOne: false
+            referencedRelation: "exchanges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exchanges: {
         Row: {
           created_at: string
           created_by: string | null
+          exchange_type: string
           id: string
           original_sale_id: string
           price_difference: number
@@ -190,6 +259,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          exchange_type?: string
           id?: string
           original_sale_id: string
           price_difference?: number
@@ -199,6 +269,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          exchange_type?: string
           id?: string
           original_sale_id?: string
           price_difference?: number
@@ -1076,6 +1147,17 @@ export type Database = {
       has_permission: { Args: { p_permission: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       open_cash_session: { Args: { p_opening_cash?: number }; Returns: string }
+      process_sale_exchange: {
+        Args: {
+          p_exchange_type: string
+          p_items: Json
+          p_original_sale_id: string
+          p_reason: string
+          p_settlement_method?: Database["public"]["Enums"]["payment_method"]
+          p_settlement_reference?: string
+        }
+        Returns: Json
+      }
       receive_purchase: {
         Args: {
           p_items: Json
