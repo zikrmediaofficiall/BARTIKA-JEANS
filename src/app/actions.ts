@@ -269,11 +269,19 @@ export async function closeCashSession(formData: FormData) {
 
 export async function addExpense(formData: FormData) {
   const { supabase } = await requireAdmin();
+  const cashSessionValue = String(formData.get("cash_session_id") || "").trim();
+  const cashSessionId = cashSessionValue || null;
+
+  if (cashSessionId && !z.string().uuid().safeParse(cashSessionId).success) {
+    throw new Error("اختيار الوردية غير صحيح");
+  }
+
   const { error } = await supabase.rpc("add_expense", {
-    p_category: String(formData.get("category")),
-    p_description: String(formData.get("description")),
+    p_category: String(formData.get("category") || ""),
+    p_description: String(formData.get("description") || ""),
     p_amount: Number(formData.get("amount")),
-    p_method: String(formData.get("method")),
+    p_method: String(formData.get("method") || "cash"),
+    p_cash_session_id: cashSessionId,
   });
   if (error) throw new Error(error.message);
   revalidatePath("/cash");
