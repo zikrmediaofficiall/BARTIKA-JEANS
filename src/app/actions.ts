@@ -35,47 +35,72 @@ const productSchema = z.object({
   image_public_id: z.union([z.string().trim().max(255), z.literal("")]).optional(),
 });
 
-export async function addProduct(formData: FormData) {
+export async function addProduct(formData: FormData): Promise<void> {
   const { supabase } = await requireAdmin();
   const parsed = productSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) throw new Error("راجع بيانات الصنف");
 
   const product = parsed.data;
+  const imageUrl = product.image_url || "";
+  const imagePublicId = product.image_public_id || "";
+
+  if (Boolean(imageUrl) !== Boolean(imagePublicId)) {
+    throw new Error("ارفع الصورة واحفظ رابطها ومعرّفها معًا");
+  }
+
+  if (imageUrl) {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    if (!cloudName) {
+      throw new Error("إعداد CLOUDINARY_CLOUD_NAME غير مكتمل على الخادم");
+    }
+
+    let parsedImageUrl: URL;
+    try {
+      parsedImageUrl = new URL(imageUrl);
+    } catch {
+      throw new Error("رابط صورة المنتج غير صالح");
+    }
+
+    if (
+      parsedImageUrl.protocol !== "https:" ||
+      parsedImageUrl.hostname !== "res.cloudinary.com" ||
+      !parsedImageUrl.pathname.includes(`/${cloudName}/image/upload/`) ||
+      !imagePublicId.startsWith("bartika-jeans/products/")
+    ) {
+      throw new Error("صورة المنتج يجب أن تكون من حساب Cloudinary ومجلد BARTIKA المخصص");
+    }
+  }
+
   const { data, error } = await supabase.rpc("add_product_with_variant", {
     p_name: product.name,
     p_sku: product.sku,
     p_category: product.category || "جينز",
     p_cost_price: product.cost,
     p_sale_price: product.price,
-    p_barcode: product.barcode || null,
-    p_size: product.size || null,
-    p_color: product.color || null,
+    p_barcode: product.barcode || undefined,
+    p_size: product.size || undefined,
+    p_color: product.color || undefined,
     p_opening_quantity: product.qty,
   });
 
   if (error) throw new Error(error.message);
 
-  const imageUrl = product.image_url || "";
-  const imagePublicId = product.image_public_id || "";
-  if (imageUrl || imagePublicId) {
-    let imageHost = "";
-    try {
-      imageHost = new URL(imageUrl).hostname;
-    } catch {
-      throw new Error("رابط صورة المنتج غير صالح");
-    }
-    if (
-      imageHost !== "res.cloudinary.com" ||
-      !imageUrl.includes("/image/upload/") ||
-      !imagePublicId.startsWith("bartika-jeans/products/")
-    ) {
-      throw new Error("صورة المنتج يجب أن تكون مرفوعة إلى مجلد Cloudinary المخصص");
+  if (imageUrl && imagePublicId) {
+    const productResult =
+      data && typeof data === "object" && !Array.isArray(data) ? data : null;
+    const productId =
+      productResult && typeof productResult.product_id === "string"
+        ? productResult.product_id
+        : null;
+
+    if (!productId) {
+      throw new Error("تم إنشاء الصنف لكن لم يرجع معرّف المنتج لحفظ الصورة");
     }
 
     const { error: imageError } = await supabase
       .from("products")
       .update({ image_url: imageUrl, image_public_id: imagePublicId })
-      .eq("id", data.product_id);
+      .eq("id", productId);
     if (imageError) {
       throw new Error("تم إنشاء المنتج لكن تعذر حفظ مرجع الصورة: " + imageError.message);
     }
@@ -83,7 +108,6 @@ export async function addProduct(formData: FormData) {
 
   revalidatePath("/products");
   revalidatePath("/inventory");
-  return data;
 }
 
 const saleSchema = z.object({
@@ -115,7 +139,7 @@ export async function checkoutSale(input: unknown) {
     p_items: parsed.data.items,
     p_payments: parsed.data.payments,
     p_discount_percent: parsed.data.discount_percent,
-    p_customer_phone: parsed.data.customer_phone || null,
+    p_customer_phone: parsed.data.customer_phone || undefined,
   });
 
   if (error) throw new Error(error.message);
@@ -271,19 +295,32 @@ export async function addExpense(formData: FormData) {
   const { supabase } = await requireAdmin();
   const cashSessionValue = String(formData.get("cash_session_id") || "").trim();
   const cashSessionId = cashSessionValue || null;
+  const method = z.enum(["cash", "instapay", "visa"]).parse(
+    String(formData.get("method") || "cash"),
+  );
 
   if (cashSessionId && !z.string().uuid().safeParse(cashSessionId).success) {
     throw new Error("اختيار الوردية غير صحيح");
   }
+  if (cashSessionId && method !== "cash") {
+    throw new Error("لا يمكن ربط مصروف InstaPay أو الفيزا بدرج الكاش");
+  }
 
-  const { error } = await supabase.rpc("add_expense", {
-    p_category: String(formData.get("category") || ""),
-    p_description: String(formData.get("description") || ""),
+  const common = {
+    p_category: String(formData.get("category") || "").trim(),
+    p_description: String(formData.get("description") || "").trim(),
     p_amount: Number(formData.get("amount")),
-    p_method: String(formData.get("method") || "cash"),
-    p_cash_session_id: cashSessionId,
-  });
-  if (error) throw new Error(error.message);
+    p_method: method,
+  };
+
+  const result = cashSessionId
+    ? await supabase.rpc("add_expense", {
+        ...common,
+        p_cash_session_id: cashSessionId,
+      })
+    : await supabase.rpc("add_expense", common);
+
+  if (result.error) throw new Error(result.error.message);
   revalidatePath("/cash");
   revalidatePath("/reports");
 }

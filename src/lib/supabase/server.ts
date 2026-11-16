@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { Database } from "./database.types";
 
 type CookieStore = Awaited<ReturnType<typeof cookies>>;
 type CookieOptions = Parameters<CookieStore["set"]>[2];
@@ -18,7 +19,7 @@ export async function createClient() {
     throw new Error("إعدادات Supabase غير مكتملة. راجع ملف .env.local");
   }
 
-  return createServerClient(url, key, {
+  return createServerClient<Database, "public">(url, key, {
     cookies: {
       getAll() {
         return jar.getAll();
