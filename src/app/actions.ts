@@ -391,7 +391,7 @@ export async function processSaleExchange(formData: FormData) {
     p_original_sale_id: originalSaleId,
     p_reason: reason,
     p_items: parsedItems.data,
-    p_settlement_method: settlementMethod,
+    p_settlement_method: settlementMethod ?? undefined,
     p_settlement_reference: settlementReference || undefined,
   });
   if (error) throw new Error(error.message);
