@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { StorefrontClient } from "./storefront-client";
 
@@ -23,7 +24,7 @@ export default async function PublicShop() {
       <header className="bg-emerald-950 px-4 py-5 text-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
           <Link href="/shop" className="flex items-center gap-3">
-            {settings?.logo_url ? <img src={settings.logo_url} alt="BARTIKA" className="h-12 w-12 rounded-xl object-cover" /> : <span className="text-3xl">👖</span>}
+            {settings?.logo_url ? <Image src={settings.logo_url} alt="BARTIKA" width={48} height={48} unoptimized className="h-12 w-12 rounded-xl object-cover" /> : <span className="text-3xl">👖</span>}
             <span><b className="block text-xl tracking-widest">{settings?.store_name || "BARTIKA JEANS"}</b><small className="text-emerald-200">{settings?.store_name_ar || "بارتيكا جينز"}</small></span>
           </Link>
           <nav className="flex flex-wrap gap-3 text-sm text-emerald-100">
