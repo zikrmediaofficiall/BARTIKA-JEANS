@@ -5,7 +5,7 @@ import { updateManagerPermissions } from "@/app/actions";
 const permissionOptions = [
   ["dashboard.read", "عرض لوحة الإدارة"],
   ["sales.read_all", "عرض مبيعات جميع البائعين"],
-  ["inventory.read_movements", "عرض سجل حركات المخزون"],
+  ["inventory.read", "عرض سجل حركات المخزون"],
   ["purchases.read", "عرض الموردين والمشتريات"],
   ["stocktake.read", "عرض جلسات الجرد"],
   ["cash.read_all", "عرض جميع الورديات والخزائن"],
