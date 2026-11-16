@@ -695,6 +695,7 @@ export type Database = {
       }
       sales: {
         Row: {
+          cash_session_id: string | null
           created_at: string
           customer_id: string | null
           discount_amount: number
@@ -710,6 +711,7 @@ export type Database = {
           total: number
         }
         Insert: {
+          cash_session_id?: string | null
           created_at?: string
           customer_id?: string | null
           discount_amount?: number
@@ -725,6 +727,7 @@ export type Database = {
           total: number
         }
         Update: {
+          cash_session_id?: string | null
           created_at?: string
           customer_id?: string | null
           discount_amount?: number
@@ -740,6 +743,13 @@ export type Database = {
           total?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sales_customer_id_fkey"
             columns: ["customer_id"]
