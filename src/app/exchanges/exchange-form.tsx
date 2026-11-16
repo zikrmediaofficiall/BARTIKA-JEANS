@@ -52,6 +52,7 @@ export function ExchangeForm({
   const [lines, setLines] = useState<ExchangeLine[]>([newLine("exchange-1")]);
   const [nextId, setNextId] = useState(2);
   const [reason, setReason] = useState("");
+  const [exchangeType, setExchangeType] = useState<"voluntary" | "defect" | "nonconforming">("voluntary");
   const [settlementMethod, setSettlementMethod] = useState("");
   const [settlementReference, setSettlementReference] = useState("");
 
@@ -272,6 +273,24 @@ export function ExchangeForm({
           لا تكرر بند الفاتورة نفسه. اجمع الكمية في سطر واحد.
         </p>
       ) : null}
+
+      <label className="block text-sm font-bold">
+        نوع الحالة
+        <select
+          className="field mt-1"
+          name="exchange_type"
+          value={exchangeType}
+          onChange={(event) => setExchangeType(event.target.value as typeof exchangeType)}
+          required
+        >
+          <option value="voluntary">استبدال طوعي — تغيير مقاس / رأي</option>
+          <option value="defect">سلعة بها عيب</option>
+          <option value="nonconforming">سلعة غير مطابقة للوصف / الطلب</option>
+        </select>
+        <span className="muted mt-1 block text-xs">
+          مدة الاستبدال الطوعي يحددها إعداد المتجر. تصنيف العيب أو عدم المطابقة لا يُحصر في المدة الطوعية، مع ضرورة توثيق الحالة.
+        </span>
+      </label>
 
       <label className="block text-sm font-bold">
         سبب الاستبدال أو المرتجع
