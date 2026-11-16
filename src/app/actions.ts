@@ -571,7 +571,12 @@ export async function createOnlineOrder(formData: FormData) {
   const deliveryMethod = z.enum(["delivery", "pickup"]).parse(
     String(formData.get("delivery_method") || ""),
   );
+  const paymentPreference = z.enum(["cod", "instapay", "visa", "pickup_cash"]).parse(
+    String(formData.get("payment_preference") || ""),
+  );
   const address = String(formData.get("delivery_address") || "").trim();
+  const shippingZoneRaw = String(formData.get("shipping_zone_id") || "").trim();
+  const shippingZoneId = deliveryMethod === "delivery" ? shippingZoneRaw : null;
   const notes = String(formData.get("customer_notes") || "").trim();
   const rawItems = String(formData.get("items_json") || "[]");
   const idempotencyKey = String(formData.get("idempotency_key") || "");
@@ -582,6 +587,18 @@ export async function createOnlineOrder(formData: FormData) {
   if (!z.string().uuid().safeParse(idempotencyKey).success) {
     throw new Error("تعذر إنشاء رقم الطلب؛ حدّث الصفحة وحاول مرة أخرى");
   }
+  if (deliveryMethod === "delivery") {
+    if (address.length < 5) throw new Error("عنوان التوصيل مطلوب");
+    if (!z.string().uuid().safeParse(shippingZoneId).success) {
+      throw new Error("اختر منطقة التوصيل");
+    }
+    if (paymentPreference === "pickup_cash") {
+      throw new Error("طريقة الدفع النقدي عند الفرع لا تتوافق مع التوصيل");
+    }
+  } else if (paymentPreference === "cod") {
+    throw new Error("اختر الدفع نقدًا عند الاستلام من الفرع");
+  }
+
   const itemsSchema = z.array(z.object({
     variant_id: z.string().uuid(),
     quantity: z.number().int().min(1).max(10),
@@ -590,9 +607,6 @@ export async function createOnlineOrder(formData: FormData) {
   try { raw = JSON.parse(rawItems); } catch { throw new Error("بيانات السلة غير صحيحة"); }
   const parsedItems = itemsSchema.safeParse(raw);
   if (!parsedItems.success) throw new Error("راجع أصناف وكميات الطلب");
-  if (deliveryMethod === "delivery" && address.length < 5) {
-    throw new Error("عنوان التوصيل مطلوب");
-  }
 
   const { data, error } = await supabase.rpc("create_online_order", {
     p_customer_name: customerName,
@@ -602,10 +616,12 @@ export async function createOnlineOrder(formData: FormData) {
     p_customer_notes: notes,
     p_items: parsedItems.data,
     p_idempotency_key: idempotencyKey,
+    p_shipping_zone_id: shippingZoneId,
+    p_payment_preference: paymentPreference,
   });
   if (error) throw new Error(error.message);
 
-  const result = data as { order_number?: number };
+  const result = data as { order_number?: number; total?: number; shipping_amount?: number };
   if (!result?.order_number) throw new Error("تم إرسال الطلب لكن تعذر قراءة رقم الطلب");
   redirect("/shop/confirmation?order=" + result.order_number);
 }
@@ -786,4 +802,90 @@ export async function addExpense(formData: FormData) {
   if (result.error) throw new Error(result.error.message);
   revalidatePath("/cash");
   revalidatePath("/reports");
+}
+
+
+export async function addShippingCompany(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const name = String(formData.get("name") || "").trim();
+  const phone = String(formData.get("contact_phone") || "").trim();
+  const trackingTemplate = String(formData.get("tracking_url_template") || "").trim();
+  if (name.length < 2 || name.length > 120) throw new Error("اسم شركة الشحن غير صحيح");
+  if (phone.length > 30 || trackingTemplate.length > 500) throw new Error("راجع بيانات التواصل أو رابط التتبع");
+  if (trackingTemplate && !/^https:\/\//i.test(trackingTemplate)) {
+    throw new Error("رابط التتبع يجب أن يبدأ بـ https://");
+  }
+  const { error } = await supabase.from("shipping_companies").insert({
+    name,
+    contact_phone: phone || null,
+    tracking_url_template: trackingTemplate || null,
+    is_active: true,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/shipping");
+  revalidatePath("/shop");
+}
+
+export async function addShippingZone(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const companyId = String(formData.get("company_id") || "");
+  const name = String(formData.get("name") || "").trim();
+  const fee = Number(formData.get("fee"));
+  const freeRaw = String(formData.get("free_shipping_threshold") || "").trim();
+  const freeThreshold = freeRaw ? Number(freeRaw) : null;
+  const sortOrder = Number(formData.get("sort_order") || 0);
+  if (!z.string().uuid().safeParse(companyId).success) throw new Error("اختر شركة شحن صحيحة");
+  if (name.length < 2 || name.length > 120) throw new Error("اسم المنطقة غير صحيح");
+  if (!Number.isFinite(fee) || fee < 0) throw new Error("رسوم الشحن غير صحيحة");
+  if (freeThreshold !== null && (!Number.isFinite(freeThreshold) || freeThreshold < 0)) {
+    throw new Error("حد الشحن المجاني غير صحيح");
+  }
+  const { error } = await supabase.from("shipping_zones").insert({
+    company_id: companyId,
+    name,
+    fee,
+    free_shipping_threshold: freeThreshold,
+    sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+    is_active: true,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/shipping");
+  revalidatePath("/shop");
+}
+
+export async function updateShippingZone(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const zoneId = String(formData.get("zone_id") || "");
+  const name = String(formData.get("name") || "").trim();
+  const fee = Number(formData.get("fee"));
+  const freeRaw = String(formData.get("free_shipping_threshold") || "").trim();
+  const freeThreshold = freeRaw ? Number(freeRaw) : null;
+  const active = String(formData.get("is_active") || "true") === "true";
+  if (!z.string().uuid().safeParse(zoneId).success) throw new Error("منطقة الشحن غير صحيحة");
+  if (name.length < 2 || name.length > 120 || !Number.isFinite(fee) || fee < 0) {
+    throw new Error("راجع اسم المنطقة ورسوم الشحن");
+  }
+  if (freeThreshold !== null && (!Number.isFinite(freeThreshold) || freeThreshold < 0)) {
+    throw new Error("حد الشحن المجاني غير صحيح");
+  }
+  const { error } = await supabase.from("shipping_zones").update({
+    name,
+    fee,
+    free_shipping_threshold: freeThreshold,
+    is_active: active,
+  }).eq("id", zoneId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/shipping");
+  revalidatePath("/shop");
+}
+
+export async function setShippingCompanyActive(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const companyId = String(formData.get("company_id") || "");
+  const active = String(formData.get("is_active") || "false") === "true";
+  if (!z.string().uuid().safeParse(companyId).success) throw new Error("شركة الشحن غير صحيحة");
+  const { error } = await supabase.from("shipping_companies").update({ is_active: active }).eq("id", companyId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/shipping");
+  revalidatePath("/shop");
 }
