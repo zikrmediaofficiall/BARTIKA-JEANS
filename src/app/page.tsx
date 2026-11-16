@@ -2,8 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { Shell } from "@/components/shell";
+import { PasswordRecoveryForm } from "./password-recovery-form";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string | string[] }>;
+}) {
+  const query = await searchParams;
+  const recoveryCode = typeof query.code === "string" ? query.code : "";
+  if (recoveryCode) return <PasswordRecoveryForm code={recoveryCode} />;
+
   const { supabase, user, profile } = await getSessionContext();
   if (!user) redirect("/shop");
   if (!profile?.is_active) redirect("/login");
