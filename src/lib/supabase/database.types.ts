@@ -661,9 +661,16 @@ export type Database = {
           idempotency_key: string
           order_number: number
           paid: number
+          payment_preference: string
           payment_status: string
+          shipping_amount: number
+          shipping_company_id: string | null
+          shipping_company_name_snapshot: string | null
+          shipping_zone_id: string | null
+          shipping_zone_name_snapshot: string | null
           status: string
           subtotal: number
+          total: number | null
           updated_at: string
         }
         Insert: {
@@ -679,9 +686,16 @@ export type Database = {
           idempotency_key: string
           order_number?: number
           paid?: number
+          payment_preference?: string
           payment_status?: string
+          shipping_amount?: number
+          shipping_company_id?: string | null
+          shipping_company_name_snapshot?: string | null
+          shipping_zone_id?: string | null
+          shipping_zone_name_snapshot?: string | null
           status?: string
           subtotal: number
+          total?: number | null
           updated_at?: string
         }
         Update: {
@@ -697,12 +711,34 @@ export type Database = {
           idempotency_key?: string
           order_number?: number
           paid?: number
+          payment_preference?: string
           payment_status?: string
+          shipping_amount?: number
+          shipping_company_id?: string | null
+          shipping_company_name_snapshot?: string | null
+          shipping_zone_id?: string | null
+          shipping_zone_name_snapshot?: string | null
           status?: string
           subtotal?: number
+          total?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "online_orders_shipping_company_id_fkey"
+            columns: ["shipping_company_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_orders_shipping_zone_id_fkey"
+            columns: ["shipping_zone_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_zones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -1084,6 +1120,7 @@ export type Database = {
           invoice_number: number
           paid: number
           seller_id: string
+          shipping_amount: number
           source_online_order_id: string | null
           status: Database["public"]["Enums"]["sale_status"]
           subtotal: number
@@ -1101,6 +1138,7 @@ export type Database = {
           invoice_number?: never
           paid?: number
           seller_id: string
+          shipping_amount?: number
           source_online_order_id?: string | null
           status?: Database["public"]["Enums"]["sale_status"]
           subtotal: number
@@ -1118,6 +1156,7 @@ export type Database = {
           invoice_number?: never
           paid?: number
           seller_id?: string
+          shipping_amount?: number
           source_online_order_id?: string | null
           status?: Database["public"]["Enums"]["sale_status"]
           subtotal?: number
@@ -1150,6 +1189,80 @@ export type Database = {
             columns: ["source_online_order_id"]
             isOneToOne: false
             referencedRelation: "online_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipping_companies: {
+        Row: {
+          contact_phone: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          tracking_url_template: string | null
+          updated_at: string
+        }
+        Insert: {
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          tracking_url_template?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          tracking_url_template?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shipping_zones: {
+        Row: {
+          company_id: string
+          created_at: string
+          fee: number
+          free_shipping_threshold: number | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          fee?: number
+          free_shipping_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          fee?: number
+          free_shipping_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_zones_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1534,6 +1647,8 @@ export type Database = {
           p_delivery_method: string
           p_idempotency_key: string
           p_items: Json
+          p_payment_preference: string
+          p_shipping_zone_id: string | null
         }
         Returns: Json
       }
@@ -1566,6 +1681,24 @@ export type Database = {
           variant_id: string
         }[]
       }
+      get_public_instapay_settings: {
+        Args: never
+        Returns: {
+          instapay_ipa: string
+          instapay_url: string
+        }[]
+      }
+      get_public_shipping_options: {
+        Args: never
+        Returns: {
+          fee: number
+          free_shipping_threshold: number
+          shipping_company_id: string
+          shipping_company_name: string
+          shipping_zone_id: string
+          shipping_zone_name: string
+        }[]
+      }
       get_public_store_settings: {
         Args: never
         Returns: {
@@ -1578,13 +1711,6 @@ export type Database = {
           store_name_ar: string
           tiktok_url: string
           whatsapp_url: string
-        }[]
-      }
-      get_public_instapay_settings: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          instapay_ipa: string | null
-          instapay_url: string | null
         }[]
       }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
