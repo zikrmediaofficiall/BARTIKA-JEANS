@@ -35,5 +35,4 @@
     break-inside: avoid;
   }
   body[data-print-mode="barcode-labels"] .barcode-svg { max-height: 13mm; }
-  @page { margin: 4mm; }
 }
