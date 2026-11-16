@@ -19,7 +19,7 @@ export async function createClient() {
     throw new Error("إعدادات Supabase غير مكتملة. راجع ملف .env.local");
   }
 
-  return createServerClient<Database>(url, key, {
+  return createServerClient<Database, "public">(url, key, {
     cookies: {
       getAll() {
         return jar.getAll();
