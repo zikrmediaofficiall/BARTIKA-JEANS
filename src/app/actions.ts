@@ -461,6 +461,25 @@ export async function updateCustomerCreditLimit(formData: FormData) {
     throw new Error("حد الائتمان غير صحيح");
   }
 
+  const { data: dueRows, error: dueError } = await supabase
+    .from("sales")
+    .select("due")
+    .eq("customer_id", customerId)
+    .eq("status", "completed");
+  if (dueError) throw new Error(dueError.message);
+
+  const outstanding = (dueRows || []).reduce(
+    (sum, sale) => sum + Number(sale.due),
+    0,
+  );
+  if (creditLimit < outstanding) {
+    throw new Error(
+      "لا يمكن خفض حد الائتمان عن الرصيد المستحق الحالي: " +
+        outstanding.toFixed(2) +
+        " ج.م",
+    );
+  }
+
   const { error } = await supabase
     .from("customer_credit_accounts")
     .upsert({
