@@ -29,9 +29,11 @@
 1. ثبّت Node.js 22 LTS وnpm.
 2. شغّل npm install
 3. انسخ .env.example إلى .env.local وأدخل NEXT_PUBLIC_SUPABASE_URL وNEXT_PUBLIC_SUPABASE_ANON_KEY.
-4. نفّذ supabase/migrations/0001_initial.sql على مشروع Supabase جديد.
-5. أنشئ حساب المدير الأول من Supabase Auth، ثم امنحه دور admin يدويًا من SQL Editor بعد التحقق من هويته. لا توجد كلمة مرور افتراضية أو مفتاح سري داخل المستودع.
+4. نفّذ ملفات supabase/migrations بالترتيب 0001 ثم 0002 ثم 0003 ثم 0004 على مشروع Supabase جديد (باستخدام Supabase CLI أو SQL Editor).
+5. انشر Edge Function باسم admin-create-user باستخدام Supabase CLI. أنشئ حساب المدير الأول من Supabase Auth ثم امنحه دور admin يدويًا من SQL Editor بعد التحقق من هويته. لا توجد كلمة مرور افتراضية أو مفتاح سري داخل المستودع.
 6. شغّل npm run dev
+
+تشغيل الاختبارات: npm test
 
 ## الأمان
 - لا تضع Service Role Key في متغيرات NEXT_PUBLIC_* أو في المتصفح.
