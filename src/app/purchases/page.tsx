@@ -58,11 +58,17 @@ export default async function Purchases() {
               defaultValue=""
             >
               <option value="" disabled>اختر الصنف والمقاس واللون</option>
-              {(variants || []).map((variant) => (
-                <option key={variant.id} value={variant.id}>
-                  {variant.products?.name} · {variant.products?.sku} · {variant.size || "—"} · {variant.color || "—"} · {variant.barcode}
-                </option>
-              ))}
+              {(variants || []).map((variant) => {
+                const product = Array.isArray(variant.products)
+                  ? variant.products[0]
+                  : variant.products;
+
+                return (
+                  <option key={variant.id} value={variant.id}>
+                    {product?.name || "صنف"} · {product?.sku || "—"} · {variant.size || "—"} · {variant.color || "—"} · {variant.barcode}
+                  </option>
+                );
+              })}
             </select>
             <input className="field" name="quantity" type="number" min="1" step="1" placeholder="الكمية" required />
             <input className="field" name="unit_cost" type="number" min="0" step="0.01" placeholder="تكلفة القطعة" required />
