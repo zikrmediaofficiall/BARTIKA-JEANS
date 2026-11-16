@@ -35,12 +35,42 @@ const productSchema = z.object({
   image_public_id: z.union([z.string().trim().max(255), z.literal("")]).optional(),
 });
 
-export async function addProduct(formData: FormData) {
+export async function addProduct(formData: FormData): Promise<void> {
   const { supabase } = await requireAdmin();
   const parsed = productSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) throw new Error("راجع بيانات الصنف");
 
   const product = parsed.data;
+  const imageUrl = product.image_url || "";
+  const imagePublicId = product.image_public_id || "";
+
+  if (Boolean(imageUrl) !== Boolean(imagePublicId)) {
+    throw new Error("ارفع الصورة واحفظ رابطها ومعرّفها معًا");
+  }
+
+  if (imageUrl) {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    if (!cloudName) {
+      throw new Error("إعداد CLOUDINARY_CLOUD_NAME غير مكتمل على الخادم");
+    }
+
+    let parsedImageUrl: URL;
+    try {
+      parsedImageUrl = new URL(imageUrl);
+    } catch {
+      throw new Error("رابط صورة المنتج غير صالح");
+    }
+
+    if (
+      parsedImageUrl.protocol !== "https:" ||
+      parsedImageUrl.hostname !== "res.cloudinary.com" ||
+      !parsedImageUrl.pathname.includes(`/${cloudName}/image/upload/`) ||
+      !imagePublicId.startsWith("bartika-jeans/products/")
+    ) {
+      throw new Error("صورة المنتج يجب أن تكون من حساب Cloudinary ومجلد BARTIKA المخصص");
+    }
+  }
+
   const { data, error } = await supabase.rpc("add_product_with_variant", {
     p_name: product.name,
     p_sku: product.sku,
@@ -55,27 +85,22 @@ export async function addProduct(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  const imageUrl = product.image_url || "";
-  const imagePublicId = product.image_public_id || "";
-  if (imageUrl || imagePublicId) {
-    let imageHost = "";
-    try {
-      imageHost = new URL(imageUrl).hostname;
-    } catch {
-      throw new Error("رابط صورة المنتج غير صالح");
-    }
-    if (
-      imageHost !== "res.cloudinary.com" ||
-      !imageUrl.includes("/image/upload/") ||
-      !imagePublicId.startsWith("bartika-jeans/products/")
-    ) {
-      throw new Error("صورة المنتج يجب أن تكون مرفوعة إلى مجلد Cloudinary المخصص");
+  if (imageUrl && imagePublicId) {
+    const productResult =
+      data && typeof data === "object" && !Array.isArray(data) ? data : null;
+    const productId =
+      productResult && typeof productResult.product_id === "string"
+        ? productResult.product_id
+        : null;
+
+    if (!productId) {
+      throw new Error("تم إنشاء الصنف لكن لم يرجع معرّف المنتج لحفظ الصورة");
     }
 
     const { error: imageError } = await supabase
       .from("products")
       .update({ image_url: imageUrl, image_public_id: imagePublicId })
-      .eq("id", data.product_id);
+      .eq("id", productId);
     if (imageError) {
       throw new Error("تم إنشاء المنتج لكن تعذر حفظ مرجع الصورة: " + imageError.message);
     }
@@ -83,7 +108,6 @@ export async function addProduct(formData: FormData) {
 
   revalidatePath("/products");
   revalidatePath("/inventory");
-  return;
 }
 
 const saleSchema = z.object({
