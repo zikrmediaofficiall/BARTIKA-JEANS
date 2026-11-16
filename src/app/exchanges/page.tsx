@@ -104,7 +104,7 @@ export default async function Exchanges({
         );
       }
 
-      saleItems = items || [];
+      const rawSaleItems = items || [];
       usedQuantities = new Map<string, number>();
       for (const previous of previousItems || []) {
         if (!previous.original_sale_item_id) continue;
@@ -114,7 +114,7 @@ export default async function Exchanges({
         );
       }
 
-      const eligibleItems = saleItems
+      const eligibleItems = rawSaleItems
         .map((item) => ({
           id: item.id,
           label: `${item.product_name_snapshot} · ${item.barcode_snapshot}`,
