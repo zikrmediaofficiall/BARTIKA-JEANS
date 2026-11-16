@@ -1309,8 +1309,8 @@ export type Database = {
       record_supplier_payment: {
         Args: {
           p_amount: number
-          p_cash_session_id: string
-          p_idempotency_key: string
+          p_cash_session_id?: string
+          p_idempotency_key?: string
           p_method: Database["public"]["Enums"]["payment_method"]
           p_purchase_invoice_id: string
           p_reference: string
