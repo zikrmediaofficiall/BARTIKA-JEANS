@@ -282,8 +282,7 @@ begin
     'duplicate',false
   );
 end;
-$function$
-
+$function$;
 
 revoke all on function public.create_online_order(text,text,text,text,text,jsonb,uuid) from public;
 grant execute on function public.create_online_order(text,text,text,text,text,jsonb,uuid) to anon,authenticated;
@@ -358,8 +357,7 @@ begin
     jsonb_build_object('from',v_order.status,'to',p_status,'order_number',v_order.order_number,'sale_id',v_sale_id,'invoice_number',v_invoice));
   return jsonb_build_object('id',p_order_id,'order_number',v_order.order_number,'status',p_status,'sale_id',v_sale_id,'invoice_number',v_invoice);
 end;
-$function$
-
+$function$;
 
 revoke all on function public.set_online_order_status(uuid,text) from public,anon;
 grant execute on function public.set_online_order_status(uuid,text) to authenticated;
