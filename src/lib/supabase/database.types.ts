@@ -392,16 +392,19 @@ export type Database = {
       inventory: {
         Row: {
           quantity: number
+          reserved_quantity: number
           updated_at: string
           variant_id: string
         }
         Insert: {
           quantity?: number
+          reserved_quantity?: number
           updated_at?: string
           variant_id: string
         }
         Update: {
           quantity?: number
+          reserved_quantity?: number
           updated_at?: string
           variant_id?: string
         }
@@ -457,6 +460,115 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      online_order_items: {
+        Row: {
+          color_snapshot: string | null
+          created_at: string
+          id: string
+          image_url_snapshot: string | null
+          line_total: number
+          order_id: string
+          product_name_snapshot: string
+          quantity: number
+          size_snapshot: string | null
+          unit_price: number
+          variant_id: string
+        }
+        Insert: {
+          color_snapshot?: string | null
+          created_at?: string
+          id?: string
+          image_url_snapshot?: string | null
+          line_total: number
+          order_id: string
+          product_name_snapshot: string
+          quantity: number
+          size_snapshot?: string | null
+          unit_price: number
+          variant_id: string
+        }
+        Update: {
+          color_snapshot?: string | null
+          created_at?: string
+          id?: string
+          image_url_snapshot?: string | null
+          line_total?: number
+          order_id?: string
+          product_name_snapshot?: string
+          quantity?: number
+          size_snapshot?: string | null
+          unit_price?: number
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "online_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "seller_catalog"
+            referencedColumns: ["variant_id"]
+          },
+        ]
+      }
+      online_orders: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_notes: string | null
+          customer_phone: string
+          delivery_address: string | null
+          delivery_method: string
+          id: string
+          idempotency_key: string
+          order_number: number
+          status: string
+          subtotal: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_notes?: string | null
+          customer_phone: string
+          delivery_address?: string | null
+          delivery_method: string
+          id?: string
+          idempotency_key: string
+          order_number?: number
+          status?: string
+          subtotal: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_notes?: string | null
+          customer_phone?: string
+          delivery_address?: string | null
+          delivery_method?: string
+          id?: string
+          idempotency_key?: string
+          order_number?: number
+          status?: string
+          subtotal?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       payments: {
         Row: {
@@ -1269,6 +1381,18 @@ export type Database = {
         }
         Returns: Json
       }
+      create_online_order: {
+        Args: {
+          p_customer_name: string
+          p_customer_notes: string
+          p_customer_phone: string
+          p_delivery_address: string
+          p_delivery_method: string
+          p_idempotency_key: string
+          p_items: Json
+        }
+        Returns: Json
+      }
       create_sale: {
         Args: {
           p_customer_phone?: string
@@ -1282,6 +1406,34 @@ export type Database = {
       get_financial_report: {
         Args: { p_from: string; p_to: string }
         Returns: Json
+      }
+      get_public_catalog: {
+        Args: never
+        Returns: {
+          available_quantity: number
+          category: string
+          color: string
+          image_url: string
+          product_id: string
+          product_name: string
+          sale_price: number
+          size: string
+          variant_id: string
+        }[]
+      }
+      get_public_store_settings: {
+        Args: never
+        Returns: {
+          address: string
+          facebook_url: string
+          instagram_url: string
+          logo_url: string
+          phone: string
+          store_name: string
+          store_name_ar: string
+          tiktok_url: string
+          whatsapp_url: string
+        }[]
       }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
@@ -1319,6 +1471,10 @@ export type Database = {
       }
       set_manager_permissions: {
         Args: { p_manager_id: string; p_permission_keys: string[] }
+        Returns: Json
+      }
+      set_online_order_status: {
+        Args: { p_order_id: string; p_status: string }
         Returns: Json
       }
       set_stocktake_count: {

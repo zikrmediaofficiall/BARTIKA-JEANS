@@ -5,7 +5,7 @@ export default async function Inventory() {
   const { supabase, user, profile } = await requirePermission("inventory.read");
   const { data, error } = await supabase
     .from("inventory")
-    .select("quantity,product_variants(barcode,size,color,products(name,sku,image_url))")
+    .select("quantity,reserved_quantity,product_variants(barcode,size,color,products(name,sku,image_url))")
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -23,7 +23,9 @@ export default async function Inventory() {
               <th>باركود</th>
               <th>المقاس</th>
               <th>اللون</th>
-              <th>الرصيد</th>
+              <th>الرصيد الفعلي</th>
+              <th>محجوز لطلبات المتجر</th>
+              <th>المتاح للبيع</th>
             </tr>
           </thead>
           <tbody>
@@ -50,7 +52,9 @@ export default async function Inventory() {
                   <td>{variant?.barcode || "—"}</td>
                   <td>{variant?.size || "—"}</td>
                   <td>{variant?.color || "—"}</td>
-                  <td className="font-bold">{row.quantity}</td>
+                  <td>{row.quantity}</td>
+                  <td>{row.reserved_quantity}</td>
+                  <td className="font-bold">{Math.max(0, row.quantity - row.reserved_quantity)}</td>
                 </tr>
               );
             })}

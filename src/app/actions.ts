@@ -563,6 +563,69 @@ export async function recordSupplierPayment(formData: FormData) {
   revalidatePath("/reports");
 }
 
+export async function createOnlineOrder(formData: FormData) {
+  const supabase = await createClient();
+  const customerName = String(formData.get("customer_name") || "").trim();
+  const customerPhone = String(formData.get("customer_phone") || "").trim();
+  const deliveryMethod = z.enum(["delivery", "pickup"]).parse(
+    String(formData.get("delivery_method") || ""),
+  );
+  const address = String(formData.get("delivery_address") || "").trim();
+  const notes = String(formData.get("customer_notes") || "").trim();
+  const rawItems = String(formData.get("items_json") || "[]");
+  const idempotencyKey = String(formData.get("idempotency_key") || "");
+
+  if (customerName.length < 2 || customerName.length > 160) {
+    throw new Error("أدخل اسمًا صحيحًا");
+  }
+  if (!z.string().uuid().safeParse(idempotencyKey).success) {
+    throw new Error("تعذر إنشاء رقم الطلب؛ حدّث الصفحة وحاول مرة أخرى");
+  }
+  const itemsSchema = z.array(z.object({
+    variant_id: z.string().uuid(),
+    quantity: z.number().int().min(1).max(10),
+  })).min(1).max(20);
+  let raw: unknown;
+  try { raw = JSON.parse(rawItems); } catch { throw new Error("بيانات السلة غير صحيحة"); }
+  const parsedItems = itemsSchema.safeParse(raw);
+  if (!parsedItems.success) throw new Error("راجع أصناف وكميات الطلب");
+  if (deliveryMethod === "delivery" && address.length < 5) {
+    throw new Error("عنوان التوصيل مطلوب");
+  }
+
+  const { data, error } = await supabase.rpc("create_online_order", {
+    p_customer_name: customerName,
+    p_customer_phone: customerPhone,
+    p_delivery_method: deliveryMethod,
+    p_delivery_address: address,
+    p_customer_notes: notes,
+    p_items: parsedItems.data,
+    p_idempotency_key: idempotencyKey,
+  });
+  if (error) throw new Error(error.message);
+
+  const result = data as { order_number?: number };
+  if (!result?.order_number) throw new Error("تم إرسال الطلب لكن تعذر قراءة رقم الطلب");
+  redirect("/shop/confirmation?order=" + result.order_number);
+}
+
+export async function setOnlineOrderStatus(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const orderId = String(formData.get("order_id") || "");
+  const status = z.enum(["confirmed", "cancelled", "fulfilled"]).parse(
+    String(formData.get("status") || ""),
+  );
+  if (!z.string().uuid().safeParse(orderId).success) throw new Error("رقم الطلب غير صحيح");
+  const { error } = await supabase.rpc("set_online_order_status", {
+    p_order_id: orderId,
+    p_status: status,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/online-orders");
+  revalidatePath("/shop");
+  revalidatePath("/inventory");
+}
+
 export async function startStocktake(formData: FormData) {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase.rpc("start_stocktake", {
