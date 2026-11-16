@@ -47,9 +47,9 @@ export async function addProduct(formData: FormData) {
     p_category: product.category || "جينز",
     p_cost_price: product.cost,
     p_sale_price: product.price,
-    p_barcode: product.barcode || null,
-    p_size: product.size || null,
-    p_color: product.color || null,
+    p_barcode: product.barcode || undefined,
+    p_size: product.size || undefined,
+    p_color: product.color || undefined,
     p_opening_quantity: product.qty,
   });
 
@@ -83,7 +83,7 @@ export async function addProduct(formData: FormData) {
 
   revalidatePath("/products");
   revalidatePath("/inventory");
-  return data;
+  return;
 }
 
 const saleSchema = z.object({
@@ -115,7 +115,7 @@ export async function checkoutSale(input: unknown) {
     p_items: parsed.data.items,
     p_payments: parsed.data.payments,
     p_discount_percent: parsed.data.discount_percent,
-    p_customer_phone: parsed.data.customer_phone || null,
+    p_customer_phone: parsed.data.customer_phone || undefined,
   });
 
   if (error) throw new Error(error.message);
@@ -280,8 +280,10 @@ export async function addExpense(formData: FormData) {
     p_category: String(formData.get("category") || ""),
     p_description: String(formData.get("description") || ""),
     p_amount: Number(formData.get("amount")),
-    p_method: String(formData.get("method") || "cash"),
-    p_cash_session_id: cashSessionId,
+    p_method: z.enum(["cash", "instapay", "visa"]).parse(
+      String(formData.get("method") || "cash"),
+    ),
+    ...(cashSessionId ? { p_cash_session_id: cashSessionId } : {}),
   });
   if (error) throw new Error(error.message);
   revalidatePath("/cash");
