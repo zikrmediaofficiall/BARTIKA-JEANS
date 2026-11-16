@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "@/app/actions";
+import { BRAND_LOGO_URL } from "@/lib/brand";
 
-const brandLogo = "https://res.cloudinary.com/dcuveyab9/image/upload/v1794812757/bartika-jeans/general/bartika-brand-logo.webp";
 
 export default async function Login({
   searchParams,
@@ -12,15 +12,15 @@ export default async function Login({
   const query = await searchParams;
 
   return (
-    <main className="grid min-h-screen place-items-center p-5">
-      <section className="panel w-full max-w-md p-8">
+    <main className="brand-login grid min-h-screen place-items-center p-5">
+      <section className="panel w-full max-w-md border border-gold-400/40 p-8 shadow-brand-gold">
         <div className="mb-8 text-center">
           <Image
-            src={brandLogo}
+            src={BRAND_LOGO_URL}
             alt="شعار BARTIKA JEANS"
-            width={96}
-            height={96}
-            className="mx-auto mb-3 h-24 w-24 rounded-2xl object-cover"
+            width={128}
+            height={128}
+            className="brand-logo-frame mx-auto mb-4 h-32 w-32 rounded-2xl object-contain p-1"
             unoptimized
             priority
           />

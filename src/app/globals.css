@@ -1,8 +1,45 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f5f7f5;color:#14251f;font-family:Arial,Tahoma,sans-serif}button,input,select{font:inherit}a{color:inherit;text-decoration:none}.panel{background:#fff;border:1px solid #e5ebe7;border-radius:18px;box-shadow:0 8px 28px rgba(10,45,34,.04)}.field{width:100%;border:1px solid #dce5df;border-radius:11px;padding:11px 13px;background:#fff;outline:none}.field:focus{border-color:#b88a31;box-shadow:0 0 0 3px #b88a311c}.btn{border-radius:11px;padding:10px 16px;font-weight:700}.btn-primary{background:#075b47;color:white}.btn-gold{background:#b88a31;color:white}.muted{color:#75847d}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:12px;border-bottom:1px solid #edf1ee;white-space:nowrap}th{color:#75847d;font-size:13px;font-weight:700}
 
+:root {
+  color-scheme: light;
+  --bartika-midnight: #000010;
+  --bartika-navy: #001068;
+  --bartika-royal: #0038c8;
+  --bartika-royal-highlight: #0b52f0;
+  --bartika-gold: #d8aa3d;
+  --bartika-gold-light: #f8e888;
+  --bartika-gold-deep: #956919;
+  --bartika-page: #f2f5fc;
+  --bartika-ink: #101a38;
+  --bartika-line: #dce5f7;
+}
+* { box-sizing: border-box; }
+html { background: var(--bartika-page); }
+body { margin: 0; background: var(--bartika-page); color: var(--bartika-ink); font-family: Arial, Tahoma, sans-serif; }
+button, input, select, textarea { font: inherit; }
+a { color: inherit; text-decoration: none; }
+::selection { background: #0038c8; color: #fff; }
+:focus-visible { outline: 3px solid var(--bartika-gold); outline-offset: 2px; }
+.panel { background: #fff; border: 1px solid var(--bartika-line); border-radius: 18px; box-shadow: 0 10px 32px rgba(0,16,64,.07); }
+.field { width: 100%; border: 1px solid #cbd7f0; border-radius: 11px; padding: 11px 13px; background: #fff; color: var(--bartika-ink); outline: none; }
+.field:focus { border-color: var(--bartika-gold); box-shadow: 0 0 0 3px rgba(248,232,136,.38); }
+.btn { border-radius: 11px; padding: 10px 16px; font-weight: 700; transition: transform .15s ease, filter .15s ease; }
+.btn:hover { filter: brightness(1.06); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: linear-gradient(120deg,#0038c8,#001068); color: #fff; box-shadow: 0 5px 16px rgba(0,56,200,.18); }
+.btn-gold { background: linear-gradient(120deg,#f8e888,#d8aa3d); color: #000010; box-shadow: 0 5px 16px rgba(201,148,44,.18); }
+.muted { color: #66728f; }
+.table-wrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; }
+th,td { text-align: right; padding: 12px; border-bottom: 1px solid #e8edf8; white-space: nowrap; }
+th { color: #66728f; font-size: 13px; font-weight: 700; }
+.app-shell-header { border-bottom: 1px solid var(--bartika-line); padding-bottom: 16px; }
+.brand-logo-frame { display: grid; place-items: center; overflow: hidden; background: var(--bartika-midnight); border: 1px solid rgba(248,232,136,.75); box-shadow: 0 8px 22px rgba(0,16,64,.22); }
+.brand-login {
+  background: radial-gradient(circle at 12% 14%,rgba(0,56,200,.42),transparent 33%), radial-gradient(circle at 88% 84%,rgba(0,56,200,.3),transparent 35%), linear-gradient(145deg,#000010 0%,#001068 58%,#000010 100%);
+}
 /* Printable BARTIKA Code 128 labels */
 .barcode-print-only { display: none; }
 @media print {

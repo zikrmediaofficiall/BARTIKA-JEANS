@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { signOut } from "@/app/actions";
+import { BRAND_LOGO_URL } from "@/lib/brand";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -59,18 +60,18 @@ export function Shell({
     <div className="min-h-screen md:flex">
       <aside className="bg-emerald-950 p-4 text-white md:sticky md:top-0 md:h-screen md:w-64">
         <div className="mb-8 flex items-center gap-3 px-2">
-          <div className="h-12 w-12 overflow-hidden rounded-xl border border-gold-400 bg-emerald-950">
+          <div className="brand-logo-frame h-14 w-14 rounded-xl">
             <Image
-              src="https://res.cloudinary.com/dcuveyab9/image/upload/v1794812757/bartika-jeans/general/bartika-brand-logo.webp"
+              src={BRAND_LOGO_URL}
               alt="شعار BARTIKA JEANS"
-              width={48}
-              height={48}
-              className="h-full w-full object-cover"
+              width={56}
+              height={56}
+              className="h-full w-full object-contain"
               unoptimized
             />
           </div>
           <div>
-            <b className="tracking-wider">BARTIKA</b>
+            <b className="tracking-wider text-gold-300">BARTIKA</b>
             <div className="text-xs text-gold-300">JEANS MANAGEMENT</div>
           </div>
         </div>
