@@ -249,6 +249,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          exchange_type: string
           id: string
           original_sale_id: string
           price_difference: number
@@ -258,6 +259,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          exchange_type?: string
           id?: string
           original_sale_id: string
           price_difference?: number
@@ -267,6 +269,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          exchange_type?: string
           id?: string
           original_sale_id?: string
           price_difference?: number
@@ -1146,6 +1149,7 @@ export type Database = {
       open_cash_session: { Args: { p_opening_cash?: number }; Returns: string }
       process_sale_exchange: {
         Args: {
+          p_exchange_type: string
           p_items: Json
           p_original_sale_id: string
           p_reason: string
