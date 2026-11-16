@@ -409,6 +409,112 @@ export async function processSaleExchange(formData: FormData) {
   redirect(`/exchanges?invoice=${encodeURIComponent(invoiceNumber)}&success=1`);
 }
 
+const customerInputSchema = z.object({
+  name: z.string().trim().min(2).max(160),
+  phone: z.string().trim().max(30),
+  email: z.union([z.literal(""), z.string().email().max(160)]),
+  address: z.string().trim().max(300),
+  notes: z.string().trim().max(1000),
+  credit_limit: z.coerce.number().finite().min(0).max(100000000),
+});
+
+export async function addCustomer(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const parsed = customerInputSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) throw new Error("راجع بيانات العميل وحد الائتمان");
+
+  const values = parsed.data;
+  const { data: customer, error } = await supabase
+    .from("customers")
+    .insert({
+      name: values.name,
+      phone: values.phone || null,
+      email: values.email || null,
+      address: values.address || null,
+      notes: values.notes || null,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const { error: creditError } = await supabase
+    .from("customer_credit_accounts")
+    .upsert({
+      customer_id: customer.id,
+      credit_limit: values.credit_limit,
+    });
+  if (creditError) throw new Error(creditError.message);
+
+  revalidatePath("/customers");
+}
+
+export async function updateCustomerCreditLimit(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const customerId = String(formData.get("customer_id") || "");
+  const creditLimit = Number(formData.get("credit_limit"));
+
+  if (!z.string().uuid().safeParse(customerId).success) {
+    throw new Error("ملف العميل غير صحيح");
+  }
+  if (!Number.isFinite(creditLimit) || creditLimit < 0 || creditLimit > 100000000) {
+    throw new Error("حد الائتمان غير صحيح");
+  }
+
+  const { error } = await supabase
+    .from("customer_credit_accounts")
+    .upsert({
+      customer_id: customerId,
+      credit_limit: creditLimit,
+    });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/customers");
+  revalidatePath("/customers/" + customerId);
+}
+
+export async function collectSaleDue(formData: FormData) {
+  const { supabase, profile } = await requireUser();
+  if (profile.role !== "admin" && profile.role !== "seller") {
+    throw new Error("تحصيل الأرصدة متاح للأدمن والبائعين فقط");
+  }
+
+  const saleId = String(formData.get("sale_id") || "");
+  const amount = Number(formData.get("amount"));
+  const method = z.enum(["cash", "instapay", "visa"]).parse(
+    String(formData.get("method") || ""),
+  );
+  const reference = String(formData.get("reference") || "").trim();
+  const idempotencyKey = String(formData.get("idempotency_key") || "");
+
+  if (!z.string().uuid().safeParse(saleId).success) {
+    throw new Error("الفاتورة غير صحيحة");
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("مبلغ التحصيل غير صحيح");
+  }
+  if (!z.string().uuid().safeParse(idempotencyKey).success) {
+    throw new Error("معرّف التحصيل غير صالح؛ حدّث الصفحة وأعد المحاولة");
+  }
+  if (method !== "cash" && reference.length < 3) {
+    throw new Error("مرجع التحويل أو الفيزا مطلوب");
+  }
+
+  const { error } = await supabase.rpc("collect_sale_due", {
+    p_sale_id: saleId,
+    p_amount: amount,
+    p_method: method,
+    p_reference: reference || undefined,
+    p_idempotency_key: idempotencyKey,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/customers");
+  revalidatePath("/invoices");
+  revalidatePath("/cash");
+  revalidatePath("/reports");
+}
+
 export async function startStocktake(formData: FormData) {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase.rpc("start_stocktake", {
