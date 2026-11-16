@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { createOnlineOrder } from "@/app/actions";
+import { calculateShippingAmount } from "@/lib/shipping";
 
 type CatalogRow = {
   product_id: string;
@@ -70,11 +71,16 @@ export function StorefrontClient({
 
   const subtotal = cart.reduce((sum, line) => sum + line.unit_price * line.quantity, 0);
   const selectedZone = shippingOptions.find((option) => option.shipping_zone_id === shippingZoneId);
-  const shippingAmount = deliveryMethod === "delivery" && selectedZone
-    ? selectedZone.free_shipping_threshold !== null && subtotal >= Number(selectedZone.free_shipping_threshold)
-      ? 0
-      : Number(selectedZone.fee)
-    : 0;
+  const shippingAmount = calculateShippingAmount(
+    subtotal,
+    deliveryMethod,
+    selectedZone ? {
+      fee: Number(selectedZone.fee),
+      free_shipping_threshold: selectedZone.free_shipping_threshold === null
+        ? null
+        : Number(selectedZone.free_shipping_threshold),
+    } : null,
+  );
   const total = Math.round((subtotal + shippingAmount) * 100) / 100;
   const cartPayload = JSON.stringify(cart.map((line) => ({
     variant_id: line.variant_id,
