@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Electron main process is a CommonJS entry point. */
 "use strict";
 
 const path = require("node:path");
