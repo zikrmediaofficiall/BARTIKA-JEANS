@@ -46,13 +46,9 @@ export default async function Exchanges({
   } | null = null;
   let saleItems: {
     id: string;
-    variant_id: string;
-    product_name_snapshot: string;
-    barcode_snapshot: string;
-    quantity: number;
-    unit_price: number;
-    line_total: number;
-    discount_amount: number;
+    label: string;
+    remaining: number;
+    netUnitPrice: number;
   }[] = [];
   let variants: {
     id: string;
@@ -132,7 +128,7 @@ export default async function Exchanges({
         }))
         .filter((item) => item.remaining > 0);
 
-      saleItems = eligibleItems as typeof saleItems;
+      saleItems = eligibleItems;
 
       variants = (variantRows || []).map((variant) => {
         const product = Array.isArray(variant.products)
