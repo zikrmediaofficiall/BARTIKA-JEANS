@@ -352,6 +352,9 @@ export async function processSaleExchange(formData: FormData) {
   const originalSaleId = String(formData.get("original_sale_id") || "");
   const invoiceNumber = String(formData.get("invoice_number") || "");
   const reason = String(formData.get("reason") || "").trim();
+  const exchangeType = z.enum(["voluntary", "defect", "nonconforming"]).parse(
+    String(formData.get("exchange_type") || "voluntary"),
+  );
   const rawItems = String(formData.get("items_json") || "");
   const settlementMethodValue = String(formData.get("settlement_method") || "");
   const settlementReference = String(formData.get("settlement_reference") || "").trim();
@@ -390,6 +393,7 @@ export async function processSaleExchange(formData: FormData) {
   const { data, error } = await supabase.rpc("process_sale_exchange", {
     p_original_sale_id: originalSaleId,
     p_reason: reason,
+    p_exchange_type: exchangeType,
     p_items: parsedItems.data,
     p_settlement_method: settlementMethod ?? undefined,
     p_settlement_reference: settlementReference || undefined,
