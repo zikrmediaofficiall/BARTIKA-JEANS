@@ -67,35 +67,44 @@ export default async function StocktakeDetail({
             </tr>
           </thead>
           <tbody>
-            {(items || []).map((item) => (
-              <tr key={item.id}>
-                <td>
-                  {item.product_variants?.products?.name} · {item.product_variants?.size || "—"} · {item.product_variants?.color || "—"}
-                </td>
-                <td>{item.product_variants?.barcode}</td>
-                <td>{item.system_quantity}</td>
-                <td className="font-bold">{item.actual_quantity}</td>
-                {isAdmin ? (
+            {(items || []).map((item) => {
+              const variant = Array.isArray(item.product_variants)
+                ? item.product_variants[0]
+                : item.product_variants;
+              const product = Array.isArray(variant?.products)
+                ? variant.products[0]
+                : variant?.products;
+
+              return (
+                <tr key={item.id}>
                   <td>
-                    {session.status !== "approved" ? (
-                      <form action={setStocktakeCount} className="flex min-w-64 gap-2">
-                        <input type="hidden" name="stocktake_id" value={id} />
-                        <input type="hidden" name="variant_id" value={item.variant_id} />
-                        <input
-                          className="field w-24"
-                          name="actual_quantity"
-                          type="number"
-                          min="0"
-                          defaultValue={item.actual_quantity}
-                        />
-                        <input className="field w-28" name="reason" placeholder="سبب الفرق" />
-                        <button className="btn btn-primary">حفظ</button>
-                      </form>
-                    ) : null}
+                    {product?.name || "—"} · {variant?.size || "—"} · {variant?.color || "—"}
                   </td>
-                ) : null}
-              </tr>
-            ))}
+                  <td>{variant?.barcode || "—"}</td>
+                  <td>{item.system_quantity}</td>
+                  <td className="font-bold">{item.actual_quantity}</td>
+                  {isAdmin ? (
+                    <td>
+                      {session.status !== "approved" ? (
+                        <form action={setStocktakeCount} className="flex min-w-64 gap-2">
+                          <input type="hidden" name="stocktake_id" value={id} />
+                          <input type="hidden" name="variant_id" value={item.variant_id} />
+                          <input
+                            className="field w-24"
+                            name="actual_quantity"
+                            type="number"
+                            min="0"
+                            defaultValue={item.actual_quantity}
+                          />
+                          <input className="field w-28" name="reason" placeholder="سبب الفرق" />
+                          <button className="btn btn-primary">حفظ</button>
+                        </form>
+                      ) : null}
+                    </td>
+                  ) : null}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
