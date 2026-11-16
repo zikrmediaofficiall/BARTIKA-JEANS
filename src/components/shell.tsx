@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { signOut } from "@/app/actions";
 import {
   LayoutDashboard,
@@ -50,8 +51,15 @@ export function Shell({
     <div className="min-h-screen md:flex">
       <aside className="bg-emerald-950 p-4 text-white md:sticky md:top-0 md:h-screen md:w-64">
         <div className="mb-8 flex items-center gap-3 px-2">
-          <div className="grid h-12 w-12 place-items-center rounded-xl border border-gold-400 text-2xl font-black text-gold-300">
-            B
+          <div className="h-12 w-12 overflow-hidden rounded-xl border border-gold-400 bg-emerald-950">
+            <Image
+              src="https://res.cloudinary.com/dcuveyab9/image/upload/v1794812757/bartika-jeans/general/bartika-brand-logo.webp"
+              alt="شعار BARTIKA JEANS"
+              width={48}
+              height={48}
+              className="h-full w-full object-cover"
+              unoptimized
+            />
           </div>
           <div>
             <b className="tracking-wider">BARTIKA</b>
