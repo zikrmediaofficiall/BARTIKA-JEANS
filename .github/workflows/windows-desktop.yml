@@ -36,24 +36,28 @@ jobs:
         working-directory: desktop/windows
         run: npm install --no-audit --no-fund
 
-      - name: Build Windows 32-bit and 64-bit installers
+      - name: Check desktop launcher syntax
+        working-directory: desktop/windows
+        run: node --check main.cjs
+
+      - name: Build universal Windows installer (x64 + ia32)
         working-directory: desktop/windows
         run: npm run dist:win
 
-      - name: Verify installer outputs
+      - name: Verify installer output
         shell: pwsh
         working-directory: desktop/windows
         run: |
           $files = Get-ChildItem -Path "dist" -Filter "*.exe" -File
           $files | Format-Table Name, Length
-          if ($files.Count -lt 2) {
-            throw "Expected both x64 and ia32 Windows installer executables."
+          if ($files.Count -lt 1) {
+            throw "Expected the combined x64/ia32 Windows installer executable."
           }
 
-      - name: Upload Windows installers
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: bartika-windows-installers-${{ github.sha }}
+          name: bartika-windows-installer-${{ github.sha }}
           path: desktop/windows/dist/*.exe
           if-no-files-found: error
           retention-days: 30
@@ -74,10 +78,10 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Download Windows installers
+      - name: Download Windows installer
         uses: actions/download-artifact@v4
         with:
-          name: bartika-windows-installers-${{ github.sha }}
+          name: bartika-windows-installer-${{ github.sha }}
           path: release-files
 
       - name: Publish GitHub prerelease
@@ -89,7 +93,7 @@ jobs:
         run: |
           $tag = "v1.0.0-win7-legacy.$env:RUN_NUMBER"
           $files = Get-ChildItem -Path "release-files" -Filter "*.exe" -File
-          if ($files.Count -lt 2) {
-            throw "Windows installers are missing; refusing to publish."
+          if ($files.Count -lt 1) {
+            throw "Windows installer is missing; refusing to publish."
           }
-          gh release create $tag $files.FullName --target $env:TARGET_SHA --title "BARTIKA JEANS Windows 7 Legacy $env:RUN_NUMBER" --prerelease --notes "Legacy Windows 7 compatibility build. This uses Electron 22 / Chromium 108, which no longer receives security updates. Windows 7 has also reached end of security support. Testing/compatibility only; do not use for real customer, sales, or credential data. x64 and ia32 installers are attached. Requires internet for normal use; offline remains limited to the existing cached POS workflow."
+          gh release create $tag $files.FullName --target $env:TARGET_SHA --title "BARTIKA JEANS Windows 7 Legacy $env:RUN_NUMBER" --prerelease --notes "Legacy Windows 7 compatibility build. This uses Electron 22 / Chromium 108, which no longer receives security updates. Windows 7 has also reached end of security support. Testing/compatibility only; do not use for real customer, sales, or credential data. The combined installer supports x64 and ia32. Requires internet for normal use; offline remains limited to the existing cached POS workflow."
