@@ -4,6 +4,7 @@ import { signOut } from "@/app/actions";
 import {
   LayoutDashboard,
   ShoppingCart,
+  ShoppingBag,
   Package,
   Warehouse,
   ChartNoAxesCombined,
@@ -22,6 +23,7 @@ const links = [
   ["/products", "المنتجات", Package],
   ["/inventory", "المخزون والجرد", Warehouse],
   ["/purchases", "المشتريات", Truck],
+  ["/online-orders", "طلبات المتجر", ShoppingBag],
   ["/customers", "العملاء", Users],
   ["/invoices", "الفواتير", Receipt],
   ["/cash", "الخزينة والورديات", Wallet],
