@@ -1,3 +1,120 @@
-import {createClient} from "npm:@supabase/supabase-js@2";
-const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
-Deno.serve(async(req)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:cors});try{const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;const auth=req.headers.get("Authorization");if(!auth)throw new Error("Unauthorized");const caller=createClient(url,anon,{global:{headers:{Authorization:auth}}});const {data:{user}}=await caller.auth.getUser();if(!user)throw new Error("Unauthorized");const {data:profile}=await caller.from("profiles").select("role,is_active").eq("id",user.id).single();if(profile?.role!=="admin"||!profile.is_active)throw new Error("Forbidden");const body=await req.json();const email=String(body.email||"").trim().toLowerCase();const password=String(body.password||"");const full_name=String(body.full_name||"").trim();const role=body.role==="admin"?"admin":"seller";const max_discount_percent=Math.min(20,Math.max(0,Number(body.max_discount_percent)||0));if(!email.includes("@")||password.length<12||!full_name)throw new Error("تحقق من البريد والاسم، وكلمة المرور يجب ألا تقل عن 12 حرفًا");const admin=createClient(url,service);const {data,error}=await admin.auth.admin.createUser({email,password,email_confirm:false,user_metadata:{full_name}});if(error)throw error;const {error:pe}=await admin.from("profiles").upsert({id:data.user.id,full_name,role,max_discount_percent,is_active:true});if(pe){await admin.auth.admin.deleteUser(data.user.id);throw pe}return new Response(JSON.stringify({ok:true,user_id:data.user.id}),{headers:{...cors,"Content-Type":"application/json"}})}catch(e){return new Response(JSON.stringify({error:e instanceof Error?e.message:"تعذر إنشاء الحساب"}),{status:400,headers:{...cors,"Content-Type":"application/json"}})}});
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+Deno.serve(async (request: Request) => {
+  if (request.method === "OPTIONS") {
+    return new Response("ok", { headers: cors });
+  }
+
+  if (request.method !== "POST") {
+    return json({ error: "Method not allowed" }, 405);
+  }
+
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const authorization = request.headers.get("Authorization");
+
+    if (!url || !anonKey || !serviceRoleKey || !authorization) {
+      return json({ error: "إعدادات الخدمة أو جلسة الدخول غير مكتملة" }, 401);
+    }
+
+    const caller = createClient(url, anonKey, {
+      global: { headers: { Authorization: authorization } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const {
+      data: { user },
+      error: userError,
+    } = await caller.auth.getUser();
+
+    if (userError || !user) {
+      return json({ error: "يجب تسجيل الدخول" }, 401);
+    }
+
+    const { data: profile, error: profileError } = await caller
+      .from("profiles")
+      .select("role,is_active")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError || profile?.role !== "admin" || !profile.is_active) {
+      return json({ error: "هذه العملية للأدمن فقط" }, 403);
+    }
+
+    const body = await request.json();
+    const email = String(body.email ?? "").trim().toLowerCase();
+    const password = String(body.password ?? "");
+    const fullName = String(body.full_name ?? "").trim();
+    const requestedRole = String(body.role ?? "seller");
+    const role = requestedRole === "manager" ? "manager" : requestedRole === "seller" ? "seller" : null;
+    const discount = Number(body.max_discount_percent ?? 0);
+
+    if (!role) {
+      return json({ error: "يمكن إنشاء حساب Seller أو Manager فقط" }, 400);
+    }
+
+    if (
+      !email.includes("@") ||
+      password.length < 12 ||
+      !fullName ||
+      !Number.isFinite(discount) ||
+      discount < 0 ||
+      discount > 100
+    ) {
+      return json(
+        { error: "تحقق من البريد والاسم والخصم؛ كلمة المرور يجب ألا تقل عن 12 حرفًا والخصم بين 0 و100" },
+        400,
+      );
+    }
+
+    const admin = createClient(url, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: false,
+      user_metadata: { full_name: fullName },
+    });
+
+    if (error || !data.user) {
+      return json({ error: error?.message ?? "تعذر إنشاء المستخدم" }, 400);
+    }
+
+    const { error: profileUpsertError } = await admin.from("profiles").upsert({
+      id: data.user.id,
+      full_name: fullName,
+      role,
+      max_discount_percent: discount,
+      is_active: true,
+    });
+
+    if (profileUpsertError) {
+      await admin.auth.admin.deleteUser(data.user.id);
+      return json({ error: profileUpsertError.message }, 400);
+    }
+
+    return json({ ok: true, user_id: data.user.id, role });
+  } catch (error) {
+    return json(
+      { error: error instanceof Error ? error.message : "تعذر إنشاء الحساب" },
+      400,
+    );
+  }
+});

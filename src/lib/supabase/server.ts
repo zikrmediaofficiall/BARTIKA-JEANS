@@ -1,8 +1,37 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-export async function createClient(){
- const jar=await cookies();
- const url=process.env.NEXT_PUBLIC_SUPABASE_URL; const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
- if(!url||!key) throw new Error("إعدادات Supabase غير مكتملة. راجع ملف .env.local");
- return createServerClient(url,key,{cookies:{getAll(){return jar.getAll()},setAll(values:Array<{name:string;value:string;options?:any}>){try{values.forEach(({name,value,options})=>jar.set(name,value,options))}catch{}}}});
+
+type CookieStore = Awaited<ReturnType<typeof cookies>>;
+type CookieOptions = Parameters<CookieStore["set"]>[2];
+type CookieToSet = {
+  name: string;
+  value: string;
+  options?: CookieOptions;
+};
+
+export async function createClient() {
+  const jar = await cookies();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error("إعدادات Supabase غير مكتملة. راجع ملف .env.local");
+  }
+
+  return createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return jar.getAll();
+      },
+      setAll(values: CookieToSet[]) {
+        try {
+          values.forEach(({ name, value, options }) => {
+            jar.set(name, value, options);
+          });
+        } catch {
+          // Server Components cannot always mutate cookies; middleware refreshes them.
+        }
+      },
+    },
+  });
 }
