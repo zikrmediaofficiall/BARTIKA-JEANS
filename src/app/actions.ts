@@ -337,6 +337,74 @@ export async function receivePurchase(formData: FormData) {
   revalidatePath("/reports");
 }
 
+const exchangeItemInputSchema = z.object({
+  sale_item_id: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  replacement_variant_id: z.union([z.string().uuid(), z.literal("")]),
+});
+
+export async function processSaleExchange(formData: FormData) {
+  const { supabase, user, profile } = await requireUser();
+  if (profile.role !== "admin" && profile.role !== "seller") {
+    throw new Error("تنفيذ الاستبدال متاح للأدمن والبائعين فقط");
+  }
+
+  const originalSaleId = String(formData.get("original_sale_id") || "");
+  const invoiceNumber = String(formData.get("invoice_number") || "");
+  const reason = String(formData.get("reason") || "").trim();
+  const rawItems = String(formData.get("items_json") || "");
+  const settlementMethodValue = String(formData.get("settlement_method") || "");
+  const settlementReference = String(formData.get("settlement_reference") || "").trim();
+
+  if (!z.string().uuid().safeParse(originalSaleId).success) {
+    throw new Error("الفاتورة الأصلية غير صحيحة");
+  }
+  if (reason.length < 4 || reason.length > 500) {
+    throw new Error("اكتب سبب الاستبدال بصورة صحيحة");
+  }
+
+  let decodedItems: unknown;
+  try {
+    decodedItems = JSON.parse(rawItems);
+  } catch {
+    throw new Error("تفاصيل أصناف الاستبدال غير صالحة");
+  }
+
+  const parsedItems = z.array(exchangeItemInputSchema).min(1).max(50).safeParse(decodedItems);
+  if (!parsedItems.success) {
+    throw new Error("راجع القطع المرتجعة والكميات والبدائل");
+  }
+
+  if (new Set(parsedItems.data.map((item) => item.sale_item_id)).size !== parsedItems.data.length) {
+    throw new Error("لا تكرر بند الفاتورة نفسه؛ اجمع الكمية في سطر واحد");
+  }
+
+  const settlementMethod = settlementMethodValue
+    ? z.enum(["cash", "instapay", "visa"]).parse(settlementMethodValue)
+    : null;
+
+  if (settlementMethod && settlementMethod !== "cash" && settlementReference.length < 3) {
+    throw new Error("أدخل مرجع التحويل أو الفيزا لتوثيق التسوية");
+  }
+
+  const { data, error } = await supabase.rpc("process_sale_exchange", {
+    p_original_sale_id: originalSaleId,
+    p_reason: reason,
+    p_items: parsedItems.data,
+    p_settlement_method: settlementMethod,
+    p_settlement_reference: settlementReference || undefined,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/exchanges");
+  revalidatePath("/inventory");
+  revalidatePath("/invoices");
+  revalidatePath("/cash");
+  revalidatePath("/reports");
+
+  redirect(`/exchanges?invoice=${encodeURIComponent(invoiceNumber)}&success=1`);
+}
+
 export async function startStocktake(formData: FormData) {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase.rpc("start_stocktake", {
