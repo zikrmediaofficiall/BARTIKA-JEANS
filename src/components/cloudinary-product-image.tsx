@@ -6,7 +6,10 @@ type SignatureResponse = {
   cloudName?: string;
   apiKey?: string;
   timestamp?: number;
+  folderMode?: "fixed" | "dynamic";
   folder?: string;
+  assetFolder?: string;
+  publicIdPrefix?: string;
   signature?: string;
   error?: string;
 };
@@ -28,8 +31,8 @@ export function CloudinaryProductImage() {
     if (!file) return;
 
     setMessage("");
-    if (!file.type.startsWith("image/")) {
-      setMessage("اختر ملف صورة صالحًا.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setMessage("اختر صورة بصيغة JPG أو PNG أو WebP.");
       event.currentTarget.value = "";
       return;
     }
@@ -52,7 +55,7 @@ export function CloudinaryProductImage() {
         !signature.cloudName ||
         !signature.apiKey ||
         !signature.timestamp ||
-        !signature.folder ||
+        !signature.folderMode ||
         !signature.signature
       ) {
         throw new Error("استجابة توقيع Cloudinary غير مكتملة.");
@@ -62,8 +65,20 @@ export function CloudinaryProductImage() {
       payload.append("file", file);
       payload.append("api_key", signature.apiKey);
       payload.append("timestamp", String(signature.timestamp));
-      payload.append("folder", signature.folder);
       payload.append("signature", signature.signature);
+
+      if (signature.folderMode === "fixed" && signature.folder) {
+        payload.append("folder", signature.folder);
+      } else if (
+        signature.folderMode === "dynamic" &&
+        signature.assetFolder &&
+        signature.publicIdPrefix
+      ) {
+        payload.append("asset_folder", signature.assetFolder);
+        payload.append("public_id_prefix", signature.publicIdPrefix);
+      } else {
+        throw new Error("إعداد مسار مجلدات Cloudinary غير مكتمل.");
+      }
 
       const uploadResponse = await fetch(
         `https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`,
@@ -74,6 +89,9 @@ export function CloudinaryProductImage() {
         throw new Error(
           uploaded.error?.message || "فشل رفع الصورة إلى Cloudinary.",
         );
+      }
+      if (!uploaded.public_id.startsWith("bartika-jeans/products/")) {
+        throw new Error("Cloudinary حفظ الصورة خارج مجلد المنتجات المحدد.");
       }
 
       setImageUrl(uploaded.secure_url);
