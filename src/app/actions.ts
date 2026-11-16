@@ -523,7 +523,7 @@ export async function collectSaleDue(formData: FormData) {
     p_sale_id: saleId,
     p_amount: amount,
     p_method: method,
-    p_reference: reference || undefined,
+    p_reference: reference,
     p_idempotency_key: idempotencyKey,
   });
   if (error) throw new Error(error.message);
