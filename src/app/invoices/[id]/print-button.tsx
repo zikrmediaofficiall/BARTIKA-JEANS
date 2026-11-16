@@ -1,1 +1,1 @@
-"use client";export function PrintButton(){return <button className="btn btn-primary print:hidden" onClick={()=>window.print()}>طباعة الفاتورة / PDF</button>}
+"use client";export function PrintButton(){function print(format:"a4"|"thermal"){document.body.dataset.print=format;window.print()}return <div className="flex gap-2 print:hidden"><button className="btn btn-primary" onClick={()=>print("a4")}>طباعة A4 / PDF</button><button className="btn btn-gold" onClick={()=>print("thermal")}>طباعة حرارية 80mm</button></div>}
