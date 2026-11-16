@@ -20,10 +20,12 @@ export async function getSessionContext() {
 
 export async function requireUser() {
   const context = await getSessionContext();
-  if (!context.user || !context.profile?.is_active) {
+  const user = context.user;
+  const profile = context.profile;
+  if (!user || !profile || !profile.is_active) {
     redirect("/login");
   }
-  return context;
+  return { ...context, user, profile };
 }
 
 export async function requireAdmin() {
