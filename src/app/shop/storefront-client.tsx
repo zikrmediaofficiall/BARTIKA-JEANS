@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { createOnlineOrder } from "@/app/actions";
 import { calculateShippingAmount } from "@/lib/shipping";
 
@@ -145,9 +146,9 @@ export function StorefrontClient({
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {products.map((product) => (
             <article key={product.product_id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="aspect-[4/3] bg-slate-100">
+              <div className="relative aspect-[4/3] bg-slate-100">
                 {product.image ? (
-                  <img src={product.image} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
+                  <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw" unoptimized className="object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-5xl">👖</div>
                 )}
