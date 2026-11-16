@@ -15,16 +15,29 @@ export default async function POS() {
 
   if (error) throw new Error("تعذر تحميل كتالوج البيع: " + error.message);
 
-  const catalog = (data || []).map((item) => ({
-    variant_id: item.variant_id,
-    product_name: item.product_name,
-    sku: item.sku,
-    barcode: item.barcode,
-    size: item.size,
-    color: item.color,
-    price: Number(item.sale_price),
-    stock: Number(item.stock),
-  }));
+  const catalog = (data || []).flatMap((item) => {
+    if (
+      !item.variant_id ||
+      !item.product_name ||
+      !item.sku ||
+      !item.barcode ||
+      item.sale_price === null ||
+      item.stock === null
+    ) {
+      return [];
+    }
+
+    return [{
+      variant_id: item.variant_id,
+      product_name: item.product_name,
+      sku: item.sku,
+      barcode: item.barcode,
+      size: item.size,
+      color: item.color,
+      price: Number(item.sale_price),
+      stock: Number(item.stock),
+    }];
+  });
 
   const maxDiscount =
     profile.role === "admin" ? 100 : Number(profile.max_discount_percent || 0);
