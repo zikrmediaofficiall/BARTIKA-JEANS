@@ -32,15 +32,14 @@ export function StaffClient() {
       if (data?.error) throw new Error(data.error);
 
       setMessage(
-        role === "manager"
-          ? "تم إنشاء حساب المدير. الصلاحيات الإدارية الافتراضية مغلقة؛ امنح الصلاحيات المطلوبة من القسم أدناه."
-          : "تم إنشاء حساب البائع. يجب تأكيد البريد الإلكتروني قبل تسجيل الدخول.",
+        `تم إنشاء حساب ${role === "manager" ? "مدير المحل" : "البائع"} وتفعيله. سلّم كلمة المرور المؤقتة للموظف عبر قناة خاصة، واطلب منه تغييرها من صفحة «تغيير كلمة المرور» بعد أول دخول.`,
       );
       setEmail("");
       setName("");
-      setPassword("");
       setDiscount(0);
       setRole("seller");
+      // Keep the temporary password in the field so the admin can share the exact
+      // password they entered through a private channel before clearing it manually.
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "تعذر إنشاء الحساب");
     } finally {
@@ -50,7 +49,10 @@ export function StaffClient() {
 
   return (
     <section className="panel mb-6 p-5">
-      <h3 className="mb-4 font-black">إضافة موظف</h3>
+      <h3 className="mb-2 font-black">إضافة موظف</h3>
+      <p className="muted mb-4 text-xs">
+        الحسابات التي ينشئها الأدمن تُفعّل مباشرة. استخدم كلمة مرور مؤقتة قوية وشاركها مع الموظف بشكل خاص.
+      </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <input
           className="field"
@@ -70,6 +72,7 @@ export function StaffClient() {
           className="field"
           placeholder="كلمة مرور مؤقتة (12 حرفًا على الأقل)"
           type="password"
+          autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
@@ -105,7 +108,7 @@ export function StaffClient() {
       >
         {busy ? "جارٍ الإنشاء…" : role === "manager" ? "إنشاء حساب مدير" : "إنشاء حساب بائع"}
       </button>
-      {message && <p className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm">{message}</p>}
+      {message && <p className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm" role="status">{message}</p>}
     </section>
   );
 }

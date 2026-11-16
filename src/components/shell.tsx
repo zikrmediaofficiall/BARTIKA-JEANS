@@ -19,6 +19,7 @@ import {
   ScanLine,
   QrCode,
   MapPinned,
+  KeyRound,
 } from "lucide-react";
 
 const links = [
@@ -92,6 +93,9 @@ export function Shell({
           <div className="mb-3 text-xs text-gold-300">
             {roleNames[role] || "مستخدم"}
           </div>
+          <Link href="/change-password" className="mb-4 flex items-center gap-2 text-sm text-gold-300 hover:text-white">
+            <KeyRound size={15} /> تغيير كلمة المرور
+          </Link>
           <form action={signOut}>
             <button className="flex items-center gap-2 text-sm text-white/80">
               <LogOut size={16} /> تسجيل الخروج
