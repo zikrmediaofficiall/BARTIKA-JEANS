@@ -1,4 +1,54 @@
-import Link from "next/link";import {redirect} from "next/navigation";import {getSessionContext} from "@/lib/auth";import {Shell} from "@/components/shell";
-const money=(n:number)=>new Intl.NumberFormat("ar-EG",{style:"currency",currency:"EGP",maximumFractionDigits:2}).format(n||0);
-export default async function Home(){const {supabase,user,profile}=await getSessionContext();if(!user||!profile?.is_active)redirect("/login");const admin=profile.role==="admin";const [sales,products,stock]=await Promise.all([supabase.from("sales").select("id,total,created_at,status").gte("created_at",new Date(new Date().setHours(0,0,0,0)).toISOString()).neq("status","void"),supabase.from("products").select("id",{count:"exact",head:true}).eq("is_active",true),supabase.from("inventory").select("quantity")]);const total=(sales.data||[]).reduce((a,s)=>a+Number(s.total),0);const qty=(stock.data||[]).reduce((a,s)=>a+Number(s.quantity),0);return <Shell user={user.email||"مستخدم"} role={profile.role}><div className="mb-6 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-black">لوحة التحكم</h2><p className="muted mt-1">ملخص حركة المحل اليوم</p></div><Link className="btn btn-primary" href="/pos">＋ فاتورة جديدة</Link></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat title="مبيعات اليوم" value={money(total)}/><Stat title="فواتير اليوم" value={String(sales.data?.length||0)}/><Stat title="الأصناف النشطة" value={String(products.count||0)}/><Stat title="إجمالي القطع بالمخزون" value={String(qty)}/></div>{admin&&<div className="panel mt-6 p-5"><h3 className="mb-3 font-black">تنبيه إداري</h3><p className="text-sm leading-7 text-slate-600">تكلفة البضاعة والأرباح تظهر للأدمن فقط. لا يتم احتساب صافي الربح حتى تسجيل تكاليف الشراء والمصروفات بصورة صحيحة.</p><div className="mt-4 flex flex-wrap gap-2"><Link className="btn btn-gold" href="/products">إدارة المنتجات</Link><Link className="btn btn-primary" href="/inventory">فتح الجرد والمخزون</Link></div></div>}<div className="panel mt-6 p-5"><h3 className="mb-4 font-black">روابط سريعة</h3><div className="grid gap-3 sm:grid-cols-3"><Quick href="/pos" title="بدء البيع" desc="باركود وفاتورة ودفع"/><Quick href="/products" title="إضافة صنف" desc="الموديلات والمقاسات والألوان"/><Quick href="/reports" title="التقارير" desc="متابعة المبيعات والأداء"/></div></div></Shell>}
-function Stat({title,value}:{title:string;value:string}){return <div className="panel p-5"><p className="muted text-sm">{title}</p><p className="mt-3 text-2xl font-black text-emerald-950">{value}</p></div>}function Quick({href,title,desc}:{href:string;title:string;desc:string}){return <Link href={href} className="rounded-xl border border-slate-100 p-4 hover:border-gold-400"><b>{title}</b><p className="muted mt-1 text-sm">{desc}</p></Link>}
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getSessionContext } from "@/lib/auth";
+import { Shell } from "@/components/shell";
+
+export default async function Home() {
+  const { supabase, user, profile } = await getSessionContext();
+  if (!user) redirect("/shop");
+  if (!profile?.is_active) redirect("/login");
+
+  const admin = profile.role === "admin";
+  const [sales, products, stock] = await Promise.all([
+    supabase.from("sales").select("id,total,created_at,status").gte("created_at",new Date(new Date().setHours(0,0,0,0)).toISOString()).neq("status","void"),
+    supabase.from("products").select("id",{count:"exact",head:true}).eq("is_active",true),
+    supabase.from("inventory").select("quantity"),
+  ]);
+  const total = (sales.data || []).reduce((sum,row)=>sum+Number(row.total),0);
+  const quantity = (stock.data || []).reduce((sum,row)=>sum+Number(row.quantity),0);
+  const money = new Intl.NumberFormat("ar-EG",{style:"currency",currency:"EGP",maximumFractionDigits:2}).format(total);
+
+  return (
+    <Shell user={user.email || "مستخدم"} role={profile.role}>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div><h2 className="text-2xl font-black">لوحة التحكم</h2><p className="muted mt-1">ملخص حركة المحل اليوم</p></div>
+        <Link className="btn btn-primary" href="/pos">＋ فاتورة جديدة</Link>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat title="مبيعات اليوم" value={money}/>
+        <Stat title="فواتير اليوم" value={String(sales.data?.length||0)}/>
+        <Stat title="الأصناف النشطة" value={String(products.count||0)}/>
+        <Stat title="إجمالي القطع بالمخزون" value={String(quantity)}/>
+      </div>
+      {admin ? <div className="panel mt-6 p-5">
+        <h3 className="mb-3 font-black">تنبيه إداري</h3>
+        <p className="text-sm leading-7 text-slate-600">تكلفة البضاعة والأرباح تظهر للأدمن فقط. لا يتم احتساب صافي الربح حتى تسجيل تكاليف الشراء والمصروفات بصورة صحيحة.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link className="btn btn-gold" href="/products">إدارة المنتجات</Link>
+          <Link className="btn btn-primary" href="/inventory">فتح الجرد والمخزون</Link>
+          <Link className="btn border" href="/online-orders">طلبات المتجر الإلكتروني</Link>
+        </div>
+      </div> : null}
+      <div className="panel mt-6 p-5">
+        <h3 className="mb-4 font-black">روابط سريعة</h3>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Quick href="/pos" title="بدء البيع" desc="باركود وفاتورة ودفع"/>
+          <Quick href="/products" title="إضافة صنف" desc="الموديلات والمقاسات والألوان"/>
+          <Quick href="/reports" title="التقارير" desc="متابعة المبيعات والأداء"/>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+function Stat({title,value}:{title:string;value:string}) { return <div className="panel p-5"><p className="muted text-sm">{title}</p><p className="mt-3 text-2xl font-black text-emerald-950">{value}</p></div>; }
+function Quick({href,title,desc}:{href:string;title:string;desc:string}) { return <Link href={href} className="rounded-xl border border-slate-100 p-4 hover:border-amber-400"><b>{title}</b><p className="muted mt-1 text-sm">{desc}</p></Link>; }
