@@ -6,7 +6,7 @@ export function normalizeBarcodeValue(value: string): string {
   if (normalized.length > 64) {
     throw new Error("الباركود لا يمكن أن يتجاوز 64 حرفًا");
   }
-  if (!/^[\\x20-\\x7E]+$/.test(normalized)) {
+  if (!/^[\x20-\x7E]+$/.test(normalized)) {
     throw new Error("الباركود يجب أن يحتوي على أحرف إنجليزية أو أرقام قابلة للطباعة فقط");
   }
   return normalized;
