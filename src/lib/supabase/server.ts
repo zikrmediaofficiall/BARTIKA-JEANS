@@ -1,6 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+type CookieStore = Awaited<ReturnType<typeof cookies>>;
+type CookieOptions = Parameters<CookieStore["set"]>[2];
+type CookieToSet = {
+  name: string;
+  value: string;
+  options?: CookieOptions;
+};
+
 export async function createClient() {
   const jar = await cookies();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,7 +23,7 @@ export async function createClient() {
       getAll() {
         return jar.getAll();
       },
-      setAll(values) {
+      setAll(values: CookieToSet[]) {
         try {
           values.forEach(({ name, value, options }) => {
             jar.set(name, value, options);
