@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
-  const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState("bartikastore321@gmail.com");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -17,16 +16,22 @@ export default function ForgotPasswordPage() {
     setError("");
     setSent(false);
 
-    const { error: requestError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: "https://bartika-jeans.vercel.app/",
-    });
+    try {
+      const supabase = createClient();
+      const { error: requestError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: "https://bartika-jeans.vercel.app/",
+      });
 
-    if (requestError) {
-      setError(requestError.message || "تعذر إرسال رسالة الاستعادة. راجع إعدادات البريد وحاول مرة أخرى.");
-    } else {
-      setSent(true);
+      if (requestError) {
+        setError(requestError.message || "تعذر إرسال رسالة الاستعادة. راجع إعدادات البريد وحاول مرة أخرى.");
+      } else {
+        setSent(true);
+      }
+    } catch {
+      setError("تعذر الاتصال بخدمة تسجيل الدخول. أعد تحميل الصفحة وحاول مرة أخرى.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (
