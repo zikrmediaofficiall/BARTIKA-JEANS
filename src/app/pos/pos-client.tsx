@@ -133,7 +133,15 @@ export default function POSClient({
           customer_phone: customer || undefined,
         });
 
-        setMessage("تم إنشاء الفاتورة رقم " + (result?.invoice_number || result?.id || ""));
+        const invoiceLabel =
+          result && typeof result === "object" && !Array.isArray(result)
+            ? typeof result.invoice_number === "number"
+              ? String(result.invoice_number)
+              : typeof result.id === "string"
+                ? result.id
+                : ""
+            : "";
+        setMessage("تم إنشاء الفاتورة رقم " + invoiceLabel);
         setCart([]);
         setPaid("");
         setSecondPaid("");
