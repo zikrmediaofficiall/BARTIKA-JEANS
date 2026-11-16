@@ -1033,6 +1033,17 @@ export type Database = {
         }
         Returns: Json
       }
+      add_product_with_variants: {
+        Args: {
+          p_category: string
+          p_cost_price: number
+          p_name: string
+          p_sale_price: number
+          p_sku: string
+          p_variants: Json
+        }
+        Returns: Json
+      }
       approve_stocktake: { Args: { p_stocktake_id: string }; Returns: Json }
       close_cash_session: {
         Args: { p_counted_cash: number; p_session_id: string }
