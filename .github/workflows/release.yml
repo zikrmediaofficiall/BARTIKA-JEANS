@@ -1,0 +1,160 @@
+name: BARTIKA Release
+
+# Releases are cut by pushing a version tag such as v1.1.0 (v<major>.<minor>.<patch>).
+# Pull requests that touch the apps only build and verify, they never publish.
+on:
+  pull_request:
+    paths:
+      - "android/**"
+      - "desktop/windows/**"
+      - ".github/workflows/release.yml"
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bartika-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      code: ${{ steps.v.outputs.code }}
+    steps:
+      - id: v
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then V="${GITHUB_REF_NAME#v}"; else V="1.1.0"; fi
+          [[ "$V" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "Bad version: $V"; exit 1; }
+          CODE=$(( ${BASH_REMATCH[1]} * 10000 + ${BASH_REMATCH[2]} * 100 + ${BASH_REMATCH[3]} ))
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "Version $V (versionCode $CODE)"
+
+  build-android:
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      VERSION_CODE: ${{ needs.version.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - uses: android-actions/setup-android@v4
+        with:
+          cmdline-tools-version: 15859902
+          packages: platform-tools
+      - name: Install Android 16 SDK
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+          yes | sdkmanager --licenses >/dev/null || true
+      - name: Build installable APK
+        run: gradle -p android --no-daemon clean lintSideload assembleSideload -PappVersionName="$VERSION" -PappVersionCode="$VERSION_CODE"
+      - name: Verify and name the APK
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/sideload/app-sideload.apk
+          test -f "$APK"
+          AAPT2="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+          "$AAPT2" dump badging "$APK" > badging.txt
+          grep -q "package: name='com.bartika.jeans'" badging.txt
+          grep -q "versionCode='$VERSION_CODE'" badging.txt
+          grep -q "versionName='$VERSION'" badging.txt
+          grep -q "application-label:'BARTIKA JEANS'" badging.txt
+          grep -q "application-icon-" badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK" | head -5
+          mkdir -p out
+          cp "$APK" "out/bartika-jeans-v$VERSION.apk"
+          (cd out && sha256sum "bartika-jeans-v$VERSION.apk" > "SHA256SUMS-android.txt" && cat SHA256SUMS-android.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: out/*
+          if-no-files-found: error
+          retention-days: 30
+
+  build-windows:
+    needs: version
+    runs-on: windows-2022
+    timeout-minutes: 45
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Set app version from the tag
+        working-directory: desktop/windows
+        run: npm version "$env:VERSION" --no-git-tag-version --allow-same-version
+      - name: Install packaging dependencies
+        working-directory: desktop/windows
+        run: npm install --no-audit --no-fund
+      - name: Check launcher and packaging configuration
+        working-directory: desktop/windows
+        run: npm run check
+      - name: Build Windows installer (x64 + ia32, Windows 7 compatible)
+        working-directory: desktop/windows
+        run: npm run dist:win
+      - name: Verify installer and write checksum
+        shell: pwsh
+        working-directory: desktop/windows
+        run: |
+          $installer = Get-ChildItem -Path "dist" -Filter "*.exe" -File | Where-Object { $_.Name -like "*Setup*" } | Select-Object -First 1
+          if ($null -eq $installer -or $installer.Length -lt 50000000) { throw "Windows installer missing or unexpectedly small." }
+          $expected = "BARTIKA-JEANS-$env:VERSION-Windows-Setup.exe"
+          if ($installer.Name -ne $expected) { throw "Unexpected installer name $($installer.Name), wanted $expected" }
+          New-Item -ItemType Directory -Force -Path "out" | Out-Null
+          Copy-Item $installer.FullName "out/$expected"
+          Copy-Item "README_AR.md" "out/README_AR.md"
+          Copy-Item "TROUBLESHOOTING_AR.md" "out/TROUBLESHOOTING_AR.md"
+          $hash = (Get-FileHash -Algorithm SHA256 "out/$expected").Hash.ToLowerInvariant()
+          "$hash  $expected" | Set-Content -Path "out/SHA256SUMS-windows.txt" -Encoding ascii
+          Get-ChildItem out | Format-Table Name, Length
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: desktop/windows/out/*
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+    needs: [version, build-android, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Publish GitHub Release
+        run: |
+          set -euo pipefail
+          NOTES="docs/releases/v$VERSION.md"
+          test -f "$NOTES" || { echo "Missing Arabic release notes $NOTES"; exit 1; }
+          ls -la assets
+          cat assets/SHA256SUMS-android.txt assets/SHA256SUMS-windows.txt > assets/SHA256SUMS.txt
+          FILES=(assets/bartika-jeans-v$VERSION.apk assets/BARTIKA-JEANS-$VERSION-Windows-Setup.exe assets/SHA256SUMS.txt assets/README_AR.md assets/TROUBLESHOOTING_AR.md)
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            gh release upload "v$VERSION" "${FILES[@]}" --clobber
+          else
+            gh release create "v$VERSION" "${FILES[@]}" --verify-tag --title "BARTIKA JEANS v$VERSION" --notes-file "$NOTES"
+          fi

@@ -1,8 +1,8 @@
 {
   "name": "bartika-jeans-windows",
-  "version": "1.0.0-legacy.2",
+  "version": "1.1.0",
   "private": true,
-  "description": "Windows desktop launcher for BARTIKA JEANS with legacy Windows 7 compatibility",
+  "description": "BARTIKA JEANS Windows desktop app (Windows 7 compatible, Electron 22)",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
@@ -16,13 +16,31 @@
   "build": {
     "appId": "com.bartika.jeans.desktop",
     "productName": "BARTIKA JEANS",
-    "directories": { "output": "dist" },
-    "files": ["main.cjs", "startup.html", "offline.html", "package.json"],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "startup.html",
+      "offline.html",
+      "package.json",
+      "build/icon.ico"
+    ],
     "asar": true,
     "compression": "normal",
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64", "ia32"] }],
-      "artifactName": "BARTIKA-JEANS-${version}-Windows-Setup.${ext}"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "artifactName": "BARTIKA-JEANS-${version}-Windows-Setup.${ext}",
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -31,7 +49,10 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "BARTIKA JEANS",
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
     }
   }
 }
