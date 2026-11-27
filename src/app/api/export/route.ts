@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Admin-only backup export. Row access still goes through Supabase RLS with the admin session.
-export const EXPORT_TABLES = [
+const EXPORT_TABLES = [
   "store_settings",
   "products",
   "product_variants",
