@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from "react";
 export type PrintFormat = "a4" | "t80" | "t58";
 
 const STORAGE_KEY = "bartika-print-format";
+// Thermal drivers define their own roll width and cut length, so only the margin is set here.
 const PAGE_RULES: Record<PrintFormat, string> = {
   a4: "@page { size: A4; margin: 10mm; }",
-  t80: "@page { size: 80mm auto; margin: 0; }",
-  t58: "@page { size: 58mm auto; margin: 0; }",
+  t80: "@page { margin: 0; }",
+  t58: "@page { margin: 0; }",
 };
 
 function isFormat(value: unknown): value is PrintFormat {
