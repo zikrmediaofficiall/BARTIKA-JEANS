@@ -1,0 +1,73 @@
+// Tables included in backups. Row access goes through Supabase RLS (admin session) or the service role (nightly job).
+export const EXPORT_TABLES = [
+  "store_settings",
+  "products",
+  "product_variants",
+  "product_costs",
+  "inventory",
+  "stock_movements",
+  "customers",
+  "customer_credit_accounts",
+  "suppliers",
+  "purchase_invoices",
+  "purchase_items",
+  "supplier_payments",
+  "sales",
+  "sale_items",
+  "sale_item_costs",
+  "payments",
+  "exchanges",
+  "exchange_items",
+  "exchange_settlements",
+  "cash_sessions",
+  "expenses",
+  "online_orders",
+  "online_order_items",
+  "online_order_payments",
+  "online_order_refunds",
+  "shipping_companies",
+  "shipping_zones",
+  "stocktakes",
+  "stocktake_items",
+  "audit_logs",
+] as const;
+
+export type Row = Record<string, unknown>;
+type Query = {
+  select: (columns: string) => {
+    order: (column: string) => { range: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: { message: string } | null }> };
+    range: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: { message: string } | null }>;
+  };
+};
+export type Client = { from: (table: string) => Query };
+
+const PAGE = 1000;
+
+export async function readTable(client: Client, table: string): Promise<Row[]> {
+  const rows: Row[] = [];
+  let order = true;
+  for (let from = 0; ; from += PAGE) {
+    const base = client.from(table).select("*");
+    let result = await (order ? base.order("id").range(from, from + PAGE - 1) : base.range(from, from + PAGE - 1));
+    if (result.error && order && from === 0) {
+      // Some tables have no "id" column; read them unordered.
+      order = false;
+      result = await client.from(table).select("*").range(from, from + PAGE - 1);
+    }
+    if (result.error) throw new Error(table + ": " + result.error.message);
+    const batch = result.data || [];
+    rows.push(...batch);
+    if (batch.length < PAGE) return rows;
+  }
+}
+
+export async function buildBackupJson(client: Client): Promise<{ body: string; counts: Record<string, number> }> {
+  const data: Record<string, Row[]> = {};
+  const counts: Record<string, number> = {};
+  for (const table of EXPORT_TABLES) {
+    data[table] = await readTable(client, table);
+    counts[table] = data[table].length;
+  }
+  const body = JSON.stringify({ exported_at: new Date().toISOString(), app: "BARTIKA JEANS", counts, data });
+  return { body, counts };
+}
