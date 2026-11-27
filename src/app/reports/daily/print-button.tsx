@@ -1,8 +1,8 @@
 "use client";
 
-export function PrintButton() {
+export function PrintButton({ target = "z-report" }: { target?: "z-report" | "statement" }) {
   const print = () => {
-    document.body.dataset.printMode = "z-report";
+    document.body.dataset.printMode = target;
     const done = () => {
       delete document.body.dataset.printMode;
       window.removeEventListener("afterprint", done);

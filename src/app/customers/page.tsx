@@ -46,6 +46,7 @@ export default async function Customers({
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-2xl font-black">ملفات العملاء</h2>
+          <Link className="btn btn-gold mt-2 inline-block" href="/customers/debts">مديونيات العملاء</Link>
           <p className="muted mt-1 text-sm">
             سجل بيانات العملاء والفواتير والأرصدة حسب صلاحيات حسابك.
           </p>
