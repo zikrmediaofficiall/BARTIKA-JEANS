@@ -30,6 +30,10 @@ const paymentLabels: Record<PaymentMethod, string> = {
   visa: "فيزا",
 };
 
+type CartLine = { variant_id: string; name: string; price: number; qty: number; stock: number };
+type HeldCart = { id: string; label: string; lines: CartLine[]; discount: number; customer: string; at: string };
+const HELD_KEY = "bartika-held-carts";
+
 export default function POSClient({
   catalog,
   maxDiscount,
@@ -52,6 +56,8 @@ export default function POSClient({
   const [lastSaleId, setLastSaleId] = useState("");
   const [printFrameSrc, setPrintFrameSrc] = useState("");
   const [autoPrint, setAutoPrint] = useState(false);
+  const [heldCarts, setHeldCarts] = useState<HeldCart[]>([]);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [busy, start] = useTransition();
   const [isOnline, setIsOnline] = useState(true);
   const [offlineRecords, setOfflineRecords] = useState<OfflineSaleRecord[]>([]);
@@ -171,6 +177,104 @@ export default function POSClient({
   const firstAmount = paid === "" ? (secondPaid ? 0 : total) : Number(paid);
   const secondAmount = Number(secondPaid || 0);
   const paidValue = firstAmount + secondAmount;
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(HELD_KEY) || "[]");
+      if (Array.isArray(saved)) setHeldCarts(saved as HeldCart[]);
+    } catch {
+      // Ignore a corrupt saved list; held carts are a convenience only.
+    }
+  }, []);
+
+  function saveHeld(next: HeldCart[]) {
+    setHeldCarts(next);
+    try {
+      localStorage.setItem(HELD_KEY, JSON.stringify(next));
+    } catch {
+      setMessage("تعذر حفظ الفاتورة المعلّقة على هذا الجهاز.");
+    }
+  }
+
+  function holdCart() {
+    if (!cart.length) return setMessage("لا توجد أصناف لتعليقها");
+    const label = customer.trim() || "فاتورة " + (heldCarts.length + 1);
+    saveHeld([
+      ...heldCarts,
+      { id: crypto.randomUUID(), label, lines: cart, discount, customer, at: new Date().toISOString() },
+    ]);
+    setCart([]);
+    setPaid("");
+    setSecondPaid("");
+    setCustomer("");
+    setReference("");
+    setDiscount(0);
+    setMessage("تم تعليق الفاتورة. يمكنك استرجاعها من قائمة الفواتير المعلّقة.");
+    searchRef.current?.focus();
+  }
+
+  function resumeCart(held: HeldCart) {
+    if (cart.length) return setMessage("علّق الفاتورة الحالية أو أفرغها قبل استرجاع فاتورة معلّقة.");
+    // Prices and stock may have changed since the cart was held, so refresh them from the catalog.
+    const lines: CartLine[] = [];
+    let adjusted = false;
+    for (const line of held.lines) {
+      const fresh = catalog.find((item) => item.variant_id === line.variant_id);
+      if (!fresh || fresh.stock < 1) {
+        adjusted = true;
+        continue;
+      }
+      const qty = Math.min(line.qty, fresh.stock);
+      if (qty !== line.qty || fresh.price !== line.price) adjusted = true;
+      lines.push({ ...line, price: fresh.price, stock: fresh.stock, qty });
+    }
+    setCart(lines);
+    setDiscount(Math.min(held.discount, maxDiscount));
+    setCustomer(held.customer);
+    saveHeld(heldCarts.filter((entry) => entry.id !== held.id));
+    setMessage(adjusted ? "تم استرجاع الفاتورة مع تحديث الأسعار أو الكميات المتاحة. راجعها قبل الإتمام." : "تم استرجاع الفاتورة المعلّقة.");
+  }
+
+  function deleteHeld(id: string) {
+    saveHeld(heldCarts.filter((entry) => entry.id !== id));
+  }
+
+  function handleSearchKey(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setQuery("");
+      return;
+    }
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    const code = query.trim().toLowerCase();
+    if (!code) return;
+    // Barcode scanners type the code and press Enter: exact barcode or SKU wins, else a single search hit.
+    const exact = catalog.find((item) => item.barcode.toLowerCase() === code || item.sku.toLowerCase() === code);
+    const target = exact || (filtered.length === 1 ? filtered[0] : undefined);
+    if (!target) {
+      setMessage(filtered.length ? "اختر الصنف المطلوب من النتائج." : "لا يوجد صنف بهذا الكود أو الاسم.");
+      return;
+    }
+    if (target.stock < 1) {
+      setMessage("الصنف غير متاح في المخزون: " + target.product_name);
+    } else {
+      add(target);
+      setMessage("");
+    }
+    setQuery("");
+  }
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "F2") {
+        event.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   function add(product: Item) {
     setCart((old) => {
@@ -329,8 +433,11 @@ export default function POSClient({
           placeholder="امسح الباركود أو ابحث باسم الصنف / SKU"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={handleSearchKey}
+          ref={searchRef}
           autoFocus
         />
+        <p className="muted -mt-2 mb-3 text-xs">F2 للبحث · Enter بعد مسح الباركود يضيف الصنف مباشرة · Esc لمسح البحث</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {filtered.map((product) => (
             <button
@@ -353,7 +460,31 @@ export default function POSClient({
       </section>
 
       <section className="panel p-5">
-        <h3 className="mb-4 text-lg font-black">الفاتورة الحالية</h3>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-lg font-black">الفاتورة الحالية</h3>
+          <button type="button" className="btn border text-sm" onClick={holdCart} disabled={!cart.length}>
+            تعليق الفاتورة
+          </button>
+        </div>
+        {heldCarts.length > 0 && (
+          <div className="mb-4 rounded-xl border border-gold-400/60 bg-emerald-50 p-3">
+            <b className="text-sm">فواتير معلّقة ({heldCarts.length})</b>
+            <ul className="mt-2 space-y-2">
+              {heldCarts.map((held) => (
+                <li key={held.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span>
+                    {held.label} · {held.lines.reduce((sum, line) => sum + line.qty, 0)} قطعة ·{" "}
+                    {new Date(held.at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                  <span className="flex gap-2">
+                    <button type="button" className="btn btn-gold text-xs" onClick={() => resumeCart(held)}>استرجاع</button>
+                    <button type="button" className="text-red-600" onClick={() => deleteHeld(held.id)} aria-label="حذف الفاتورة المعلّقة">×</button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {cart.length === 0 ? (
           <p className="muted py-8 text-center">لم تتم إضافة منتجات</p>
