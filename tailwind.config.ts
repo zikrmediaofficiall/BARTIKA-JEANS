@@ -5,19 +5,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Keep legacy emerald utility names, mapped to BARTIKA's navy and royal-blue identity.
+        // Legacy "emerald" utility names now map to the real BARTIKA emerald palette sampled from the logo.
         emerald: {
-          50: "#f0f4ff", 100: "#dfe8ff", 200: "#b9ceff", 300: "#7ea3ff",
-          400: "#3b73f0", 500: "#1454de", 600: "#0b43c3", 700: "#08339b",
-          800: "#0038c8", 900: "#001b68", 950: "#000010",
+          50: "#effaf3", 100: "#d7f2e1", 200: "#b0e3c6", 300: "#7ccda5",
+          400: "#3fae7c", 500: "#1f8f5f", 600: "#12744c", 700: "#0d5c3d",
+          800: "#0a4a31", 900: "#073824", 950: "#03140b",
         },
-        navy: { 900: "#001068", 950: "#000010" },
-        royal: { 500: "#0b52f0", 600: "#0038c8", 900: "#001068" },
-        gold: { 300: "#f8e888", 400: "#e7bd51", 500: "#c9942c" },
+        navy: { 900: "#073824", 950: "#03140b" },
+        royal: { 500: "#1f8f5f", 600: "#12744c", 900: "#073824" },
+        gold: { 300: "#f9d889", 400: "#e1ba56", 500: "#8a6a14" },
       },
       boxShadow: {
         soft: "0 12px 40px rgba(0,16,64,.12)",
-        "brand-gold": "0 0 0 1px rgba(248,232,136,.36), 0 12px 30px rgba(0,16,64,.18)",
+        "brand-gold": "0 0 0 1px rgba(249,216,137,.36), 0 12px 30px rgba(0,16,64,.18)",
       },
     },
   },

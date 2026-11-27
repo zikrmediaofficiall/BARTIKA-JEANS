@@ -4,41 +4,45 @@
 
 :root {
   color-scheme: light;
-  --bartika-midnight: #000010;
-  --bartika-navy: #001068;
-  --bartika-royal: #0038c8;
-  --bartika-royal-highlight: #0b52f0;
-  --bartika-gold: #d8aa3d;
-  --bartika-gold-light: #f8e888;
-  --bartika-gold-deep: #956919;
-  --bartika-page: #f2f5fc;
-  --bartika-ink: #101a38;
-  --bartika-line: #dce5f7;
+  --bartika-midnight: #03140b;
+  --bartika-navy: #073824;
+  --bartika-royal: #12744c;
+  --bartika-royal-highlight: #1f8f5f;
+  --bartika-gold: #e1ba56;
+  --bartika-gold-light: #f9d889;
+  --bartika-gold-deep: #8a6a14;
+  --bartika-page: #f1f7f3;
+  --bartika-ink: #0f2419;
+  --bartika-line: #d3e5da;
 }
 * { box-sizing: border-box; }
 html { background: var(--bartika-page); }
 body { margin: 0; background: var(--bartika-page); color: var(--bartika-ink); font-family: Arial, Tahoma, sans-serif; }
 button, input, select, textarea { font: inherit; }
 a { color: inherit; text-decoration: none; }
-::selection { background: #0038c8; color: #fff; }
+::selection { background: #12744c; color: #fff; }
 :focus-visible { outline: 3px solid var(--bartika-gold); outline-offset: 2px; }
-.panel { background: #fff; border: 1px solid var(--bartika-line); border-radius: 18px; box-shadow: 0 10px 32px rgba(0,16,64,.07); }
-.field { width: 100%; border: 1px solid #cbd7f0; border-radius: 11px; padding: 11px 13px; background: #fff; color: var(--bartika-ink); outline: none; }
-.field:focus { border-color: var(--bartika-gold); box-shadow: 0 0 0 3px rgba(248,232,136,.38); }
+.panel { background: #fff; border: 1px solid var(--bartika-line); border-radius: 18px; box-shadow: 0 10px 32px rgba(7,56,36,.07); }
+.field { width: 100%; border: 1px solid #c3d9cb; border-radius: 11px; padding: 11px 13px; background: #fff; color: var(--bartika-ink); outline: none; }
+.field:focus { border-color: var(--bartika-gold); box-shadow: 0 0 0 3px rgba(249,216,137,.38); }
 .btn { border-radius: 11px; padding: 10px 16px; font-weight: 700; transition: transform .15s ease, filter .15s ease; }
 .btn:hover { filter: brightness(1.06); }
 .btn:active { transform: translateY(1px); }
-.btn-primary { background: linear-gradient(120deg,#0038c8,#001068); color: #fff; box-shadow: 0 5px 16px rgba(0,56,200,.18); }
-.btn-gold { background: linear-gradient(120deg,#f8e888,#d8aa3d); color: #000010; box-shadow: 0 5px 16px rgba(201,148,44,.18); }
-.muted { color: #66728f; }
+.btn-primary { background: linear-gradient(120deg,#12744c,#073824); color: #fff; box-shadow: 0 5px 16px rgba(18,116,76,.18); }
+.btn-gold { background: linear-gradient(120deg,#f9d889,#e1ba56); color: #03140b; box-shadow: 0 5px 16px rgba(225,186,86,.18); }
+.muted { color: #5b6e63; }
 .table-wrap { overflow: auto; }
 table { width: 100%; border-collapse: collapse; }
-th,td { text-align: right; padding: 12px; border-bottom: 1px solid #e8edf8; white-space: nowrap; }
-th { color: #66728f; font-size: 13px; font-weight: 700; }
+th,td { text-align: right; padding: 12px; border-bottom: 1px solid #e3efe7; white-space: nowrap; }
+th { color: #5b6e63; font-size: 13px; font-weight: 700; }
 .app-shell-header { border-bottom: 1px solid var(--bartika-line); padding-bottom: 16px; }
-.brand-logo-frame { display: grid; place-items: center; overflow: hidden; background: var(--bartika-midnight); border: 1px solid rgba(248,232,136,.75); box-shadow: 0 8px 22px rgba(0,16,64,.22); }
+.brand-logo-frame { display: grid; place-items: center; overflow: hidden; background: var(--bartika-midnight); border: 1px solid rgba(249,216,137,.75); box-shadow: 0 8px 22px rgba(7,56,36,.22); }
 .brand-login {
-  background: radial-gradient(circle at 12% 14%,rgba(0,56,200,.42),transparent 33%), radial-gradient(circle at 88% 84%,rgba(0,56,200,.3),transparent 35%), linear-gradient(145deg,#000010 0%,#001068 58%,#000010 100%);
+  background: radial-gradient(circle at 12% 14%,rgba(18,116,76,.42),transparent 33%), radial-gradient(circle at 88% 84%,rgba(18,116,76,.3),transparent 35%), linear-gradient(145deg,#03140b 0%,#073824 58%,#03140b 100%);
+}
+.brand-hero {
+  background: radial-gradient(ellipse at 50% -10%, rgba(225,186,86,.22), transparent 55%), linear-gradient(180deg,#0a3522 0%,#052214 60%,#03140b 100%);
+  border-bottom: 1px solid rgba(225,186,86,.45);
 }
 /* Printable BARTIKA Code 128 labels */
 .barcode-print-only { display: none; }

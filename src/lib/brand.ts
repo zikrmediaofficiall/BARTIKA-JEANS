@@ -1,11 +1,12 @@
-export const BRAND_LOGO_URL = "https://res.cloudinary.com/lnsnp6km/image/upload/v1794847704/bartika-brand-logo-2026.webp";
+// Same-origin copy of the official logo (emerald velvet + gold monogram). Works offline and needs no Cloudinary upload.
+export const BRAND_LOGO_URL = "/bartika-logo.webp";
 
 export const BRAND_COLORS = {
-  midnight: "#000010",
-  navy: "#001068",
-  royalBlue: "#0038C8",
-  royalBlueHighlight: "#0B52F0",
-  gold: "#D8AA3D",
-  goldLight: "#F8E888",
-  goldDeep: "#956919",
+  forestBlack: "#03140b",
+  forest: "#073824",
+  emerald: "#12744c",
+  emeraldHighlight: "#1f8f5f",
+  gold: "#e1ba56",
+  goldLight: "#f9d889",
+  goldDeep: "#8a6a14",
 } as const;

@@ -1,3 +1,4 @@
+import { BRAND_LOGO_URL } from "@/lib/brand";
 import Image from "next/image";
 import { updateStoreSettings } from "@/app/actions";
 import { requireAdmin } from "@/lib/auth";
@@ -23,9 +24,9 @@ export default async function Settings() {
       <form action={updateStoreSettings} className="space-y-5">
         <section className="panel grid gap-4 p-5 sm:grid-cols-2">
           <div className="sm:col-span-2 flex items-center gap-4">
-            {settings.logo_url ? (
+            {BRAND_LOGO_URL ? (
               <Image
-                src={settings.logo_url}
+                src={BRAND_LOGO_URL}
                 alt="شعار BARTIKA JEANS"
                 width={88}
                 height={88}

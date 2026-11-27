@@ -1,3 +1,4 @@
+import { BRAND_LOGO_URL } from "@/lib/brand";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
@@ -24,8 +25,8 @@ export default async function PublicLinksPage() {
     <main className="min-h-screen bg-emerald-950 px-4 py-10 text-white">
       <div className="mx-auto max-w-md">
         <header className="mb-8 text-center">
-          {store?.logo_url ? (
-            <Image src={store.logo_url} alt="BARTIKA JEANS" width={112} height={112} className="brand-logo-frame mx-auto mb-4 h-28 w-28 rounded-2xl object-contain p-1" unoptimized />
+          {BRAND_LOGO_URL ? (
+            <Image src={BRAND_LOGO_URL} alt="BARTIKA JEANS" width={112} height={112} className="brand-logo-frame mx-auto mb-4 h-28 w-28 rounded-2xl object-contain p-1" unoptimized />
           ) : (
             <div className="brand-logo-frame mx-auto mb-4 grid h-24 w-24 place-items-center rounded-2xl text-4xl font-black text-gold-300">B</div>
           )}

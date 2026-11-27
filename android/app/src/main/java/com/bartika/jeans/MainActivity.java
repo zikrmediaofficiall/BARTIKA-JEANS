@@ -33,8 +33,8 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (android.os.Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(true);
-        getWindow().setStatusBarColor(android.graphics.Color.rgb(0, 16, 64));
-        getWindow().setNavigationBarColor(android.graphics.Color.rgb(0, 0, 16));
+        getWindow().setStatusBarColor(android.graphics.Color.rgb(7,56,36));
+        getWindow().setNavigationBarColor(android.graphics.Color.rgb(3,20,11));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             backInvokedCallback = this::handleBackNavigation;
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
@@ -44,7 +44,7 @@ public final class MainActivity extends Activity {
         }
 
         webView = new WebView(this);
-        webView.setBackgroundColor(android.graphics.Color.rgb(0, 0, 16));
+        webView.setBackgroundColor(android.graphics.Color.rgb(3,20,11));
         setContentView(webView);
 
         WebSettings settings = webView.getSettings();
@@ -120,12 +120,12 @@ public final class MainActivity extends Activity {
     private void showOfflineHelp() {
         String html = "<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'>"
                 + "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-                + "<body style='margin:0;background:#000010;color:white;font:16px Arial;display:grid;min-height:100vh;place-items:center;text-align:center'>"
-                + "<main style='padding:28px'><h1 style='color:#f8e888'>BARTIKA JEANS</h1>"
+                + "<body style='margin:0;background:#03140b;color:white;font:16px Arial;display:grid;min-height:100vh;place-items:center;text-align:center'>"
+                + "<main style='padding:28px'><h1 style='color:#f9d889'>BARTIKA JEANS</h1>"
                 + "<h2>لا يوجد محتوى محلي محفوظ بعد</h2>"
                 + "<p>اتصل بالإنترنت مرة واحدة، سجّل الدخول، وافتح نقطة البيع لتحميل الكتالوج وتخزينه على هذا الجهاز.</p>"
                 + "<p>بعد ذلك يمكنك استخدام نقطة البيع دون اتصال ومزامنة العمليات عند عودة الإنترنت.</p>"
-                + "<a style='color:#f8e888' href='https://bartika-jeans.vercel.app/'>إعادة المحاولة</a></main></body></html>";
+                + "<a style='color:#f9d889' href='https://bartika-jeans.vercel.app/'>إعادة المحاولة</a></main></body></html>";
         webView.loadDataWithBaseURL(HOME_URL, html, "text/html", "UTF-8", null);
     }
 
