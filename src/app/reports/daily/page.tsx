@@ -18,7 +18,7 @@ export default async function DailyReport({
   const { from, to } = cairoDayRange(day);
   const canReadExpenses = await hasPermission(supabase, profile.role, "expenses.read");
 
-  const [sales, pays, exp] = await Promise.all([
+  const [sales, pays, exp, setl] = await Promise.all([
     supabase
       .from("sales")
       .select("id,total,paid,due,discount_amount,status")
@@ -41,9 +41,17 @@ export default async function DailyReport({
           .lt("created_at", to)
           .limit(5000)
       : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from("exchange_settlements")
+      .select("direction,payment_method,amount")
+      .gte("created_at", from)
+      .lt("created_at", to)
+      .limit(5000),
   ]);
-  if (sales.error || pays.error || exp.error) {
-    throw new Error(sales.error?.message || pays.error?.message || exp.error?.message);
+  if (sales.error || pays.error || exp.error || setl.error) {
+    throw new Error(
+      sales.error?.message || pays.error?.message || exp.error?.message || setl.error?.message,
+    );
   }
 
   const rows = sales.data || [];
@@ -55,7 +63,19 @@ export default async function DailyReport({
   for (const e of exp.data || [])
     expByMethod[e.payment_method] = (expByMethod[e.payment_method] || 0) + Number(e.amount);
   const expTotal = Object.values(expByMethod).reduce((a, b) => a + b, 0);
-  const cashNet = (byMethod.cash || 0) - (expByMethod.cash || 0);
+  const refunds: Record<string, number> = {};
+  const exCollected: Record<string, number> = {};
+  for (const x of setl.data || []) {
+    const bucket = x.direction === "refund" ? refunds : exCollected;
+    bucket[x.payment_method] = (bucket[x.payment_method] || 0) + Number(x.amount);
+  }
+  const refundTotal = Object.values(refunds).reduce((a, b) => a + b, 0);
+  const exCollectedTotal = Object.values(exCollected).reduce((a, b) => a + b, 0);
+  const cashNet =
+    (byMethod.cash || 0) -
+    (expByMethod.cash || 0) -
+    (refunds.cash || 0) +
+    (exCollected.cash || 0);
 
   const line = (label: string, value: string, strong = false) => (
     <div className={`flex justify-between border-b border-dashed py-2 ${strong ? "font-black" : ""}`}>
@@ -85,11 +105,14 @@ export default async function DailyReport({
         {line("المتبقي (آجل)", money(sum("due")))}
         <h4 className="mt-4 font-black">المقبوضات حسب الطريقة</h4>
         {Object.keys(methodNames).map((m) => line(methodNames[m], money(byMethod[m] || 0)))}
+        <h4 className="mt-4 font-black">المرتجعات والاستبدال</h4>
+        {line("مبالغ مردودة للعملاء", money(refundTotal))}
+        {line("فروق محصلة من الاستبدال", money(exCollectedTotal))}
         {canReadExpenses && (
           <>
             <h4 className="mt-4 font-black">المصروفات</h4>
             {line("إجمالي المصروفات", money(expTotal))}
-            {line("صافي الكاش (كاش - مصروف كاش)", money(cashNet), true)}
+            {line("صافي الكاش (بعد المصروفات والمرتجعات)", money(cashNet), true)}
           </>
         )}
         <p className="muted mt-4 text-xs">
