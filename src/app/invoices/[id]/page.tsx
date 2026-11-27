@@ -140,7 +140,7 @@ export default async function InvoiceDetail({
           <thead>
             <tr>
               <th>الصنف</th>
-              <th>الباركود</th>
+              <th className="thermal-hide">الباركود</th>
               <th>العدد</th>
               <th>السعر</th>
               <th>الإجمالي</th>
@@ -150,7 +150,7 @@ export default async function InvoiceDetail({
             {(items || []).map((item, index) => (
               <tr key={index}>
                 <td>{item.product_name_snapshot}</td>
-                <td>{item.barcode_snapshot}</td>
+                <td className="thermal-hide">{item.barcode_snapshot}</td>
                 <td>{item.quantity}</td>
                 <td>{fmt(Number(item.unit_price))}</td>
                 <td>
@@ -232,23 +232,46 @@ export default async function InvoiceDetail({
 
       <style>{`
         @media print {
-          body { background: #fff; }
-          body[data-print="thermal"] .invoice-paper {
-            width: 80mm;
-            max-width: 80mm;
+          html, body { background: #fff !important; }
+          body * { visibility: hidden; }
+          .invoice-paper, .invoice-paper * { visibility: visible; }
+          .invoice-paper { position: absolute; inset: 0 auto auto 0; box-shadow: none !important; border: 0 !important; border-radius: 0 !important; color: #000; }
+          body[data-print="t80"] .invoice-paper,
+          body[data-print="t58"] .invoice-paper {
             margin: 0;
-            padding: 4mm;
             font-size: 11px;
+            line-height: 1.45;
+            padding: 3mm;
+            direction: rtl;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
-          body[data-print="a4"] .invoice-paper {
-            width: 210mm;
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 12mm;
-          }
-          aside, .app-shell-header, nav, .print\\:hidden {
-            display: none !important;
-          }
+          body[data-print="t80"] .invoice-paper { width: 80mm; max-width: 80mm; }
+          body[data-print="t58"] .invoice-paper { width: 58mm; max-width: 58mm; font-size: 10px; }
+          body[data-print="t80"] .invoice-paper header,
+          body[data-print="t58"] .invoice-paper header { flex-direction: column-reverse; align-items: center; text-align: center; gap: 4px; margin-bottom: 6px; padding-bottom: 6px; }
+          body[data-print="t80"] .invoice-paper header img,
+          body[data-print="t58"] .invoice-paper header img { width: 48px; height: 48px; }
+          body[data-print="t80"] .invoice-paper h1,
+          body[data-print="t58"] .invoice-paper h1 { font-size: 15px; }
+          body[data-print="t80"] .invoice-paper .grid,
+          body[data-print="t58"] .invoice-paper .grid { grid-template-columns: 1fr; gap: 2px; margin-bottom: 6px; }
+          body[data-print="t80"] .invoice-paper .thermal-hide,
+          body[data-print="t58"] .invoice-paper .thermal-hide { display: none !important; }
+          body[data-print="t80"] .invoice-paper th,
+          body[data-print="t80"] .invoice-paper td,
+          body[data-print="t58"] .invoice-paper th,
+          body[data-print="t58"] .invoice-paper td { padding: 2px 1px; white-space: normal; font-size: inherit; border-bottom: 1px dashed #000; color: #000; }
+          body[data-print="t80"] .invoice-paper .max-w-xs,
+          body[data-print="t58"] .invoice-paper .max-w-xs { max-width: none; margin: 6px 0 0; }
+          body[data-print="t80"] .invoice-paper .text-lg,
+          body[data-print="t58"] .invoice-paper .text-lg { font-size: 14px; }
+          body[data-print="t80"] .invoice-paper .text-slate-500,
+          body[data-print="t80"] .invoice-paper .text-gold-500,
+          body[data-print="t58"] .invoice-paper .text-slate-500,
+          body[data-print="t58"] .invoice-paper .text-gold-500 { color: #000; }
+          body[data-print="a4"] .invoice-paper { position: static; width: 190mm; max-width: 190mm; margin: 0 auto; padding: 6mm; }
+          aside, .app-shell-header, nav, .print\\:hidden { display: none !important; }
           main { padding: 0 !important; }
         }
       `}</style>
