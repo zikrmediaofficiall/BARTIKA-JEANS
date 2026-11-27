@@ -1,3 +1,4 @@
+import { BackupToCloudinaryButton } from "./backup-button";
 import { BRAND_LOGO_URL } from "@/lib/brand";
 import Image from "next/image";
 import { updateStoreSettings } from "@/app/actions";
@@ -122,6 +123,8 @@ export default async function Settings() {
         <p className="muted text-sm leading-6">
           حمّل نسخة كاملة من بيانات المحل (منتجات، مخزون، مبيعات، عملاء، موردين، خزينة) كملف واحد، واحفظها خارج هذا الجهاز مثل فلاشة أو Google Drive. الملف يحتوي بيانات العملاء والمبيعات فلا تشاركه مع أحد.
         </p>
+        <BackupToCloudinaryButton />
+        <p className="muted text-xs leading-5">النسخة على Cloudinary مضغوطة وخاصة (لا رابط عام)، ويُحتفظ بآخر 30 نسخة. حمّل النسخة المحلية أيضًا بالزر التالي.</p>
         <div className="flex flex-wrap gap-2">
           <a className="btn btn-gold text-sm" href="/api/export?format=json" download>
             تحميل نسخة احتياطية كاملة (JSON)
