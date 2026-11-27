@@ -49,6 +49,9 @@ export default function POSClient({
   const [reference, setReference] = useState("");
   const [customer, setCustomer] = useState("");
   const [message, setMessage] = useState("");
+  const [lastSaleId, setLastSaleId] = useState("");
+  const [printFrameSrc, setPrintFrameSrc] = useState("");
+  const [autoPrint, setAutoPrint] = useState(false);
   const [busy, start] = useTransition();
   const [isOnline, setIsOnline] = useState(true);
   const [offlineRecords, setOfflineRecords] = useState<OfflineSaleRecord[]>([]);
@@ -195,6 +198,21 @@ export default function POSClient({
     });
   }
 
+  useEffect(() => {
+    setAutoPrint(localStorage.getItem("bartika-auto-print") === "1");
+  }, []);
+
+  function toggleAutoPrint(value: boolean) {
+    setAutoPrint(value);
+    localStorage.setItem("bartika-auto-print", value ? "1" : "0");
+  }
+
+  // Loads the invoice in a hidden frame; the invoice page prints itself with the saved receipt size.
+  function printReceipt(saleId: string) {
+    setPrintFrameSrc("");
+    window.setTimeout(() => setPrintFrameSrc("/invoices/" + saleId + "?autoprint=1"), 50);
+  }
+
   function finish() {
     setMessage("");
 
@@ -242,6 +260,12 @@ export default function POSClient({
                   : ""
               : "";
           setMessage("تم إنشاء الفاتورة رقم " + invoiceLabel);
+          const saleId =
+            result && typeof result === "object" && !Array.isArray(result) && typeof result.id === "string"
+              ? result.id
+              : "";
+          setLastSaleId(saleId);
+          if (saleId && autoPrint) printReceipt(saleId);
         }
         setCart([]);
         setPaid("");
@@ -509,6 +533,23 @@ export default function POSClient({
           </div>
         </div>
 
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={autoPrint} onChange={(event) => toggleAutoPrint(event.target.checked)} />
+          طباعة الإيصال تلقائيًا بعد كل عملية بيع
+        </label>
+        {lastSaleId && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className="btn btn-gold text-sm" onClick={() => printReceipt(lastSaleId)}>
+              إعادة طباعة آخر إيصال
+            </button>
+            <a className="btn border text-sm" href={"/invoices/" + lastSaleId} target="_blank" rel="noreferrer">
+              فتح الفاتورة
+            </a>
+          </div>
+        )}
+        {printFrameSrc && (
+          <iframe title="receipt-print" src={printFrameSrc} className="pointer-events-none absolute h-0 w-0 border-0" aria-hidden="true" />
+        )}
         {message && (
           <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm">{message}</p>
         )}
