@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePermission } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 
@@ -90,6 +91,7 @@ export default async function Reports({
           </p>
         </div>
         <nav className="flex flex-wrap gap-2" aria-label="فترة التقرير">
+          <Link className="btn btn-gold" href="/reports/daily">إغلاق اليوم (Z)</Link>
           {[7, 30, 90].map((period) => (
             <a
               key={period}
