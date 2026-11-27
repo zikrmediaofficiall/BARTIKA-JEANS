@@ -74,6 +74,7 @@ export default async function CustomerDetail({
           </Link>
           <h2 className="mt-2 text-2xl font-black">{customer.name}</h2>
           <p className="muted mt-1 text-sm">ملف العميل وسجل التعاملات</p>
+          <Link className="btn btn-gold mt-2 inline-block" href={"/customers/" + id + "/statement"}>كشف حساب</Link>
         </div>
         <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-emerald-900">
           {rows.length} فاتورة ظاهرة

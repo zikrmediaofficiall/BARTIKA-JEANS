@@ -119,3 +119,18 @@ th { color: #5b6e63; font-size: 13px; font-weight: 700; }
     font-size: 12px;
   }
 }
+
+/* Printable customer statement */
+@media print {
+  body[data-print-mode="statement"] * { visibility: hidden !important; }
+  body[data-print-mode="statement"] #bartika-statement-print,
+  body[data-print-mode="statement"] #bartika-statement-print * { visibility: visible !important; }
+  body[data-print-mode="statement"] #bartika-statement-print {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
