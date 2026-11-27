@@ -24,7 +24,8 @@ jobs:
     timeout-minutes: 45
     env:
       TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-      TAG_NAME: v1.0.0-rc.1
+      VERSION: 1.0.0-rc.${{ github.run_number }}
+      TAG_NAME: v1.0.0-rc.${{ github.run_number }}
     steps:
       - name: Checkout exact tested commit
         uses: actions/checkout@v4
@@ -56,14 +57,14 @@ jobs:
       - name: Prepare QA artifacts
         run: |
           mkdir -p release-files
-          cp android/app/build/outputs/apk/debug/app-debug.apk release-files/bartika-jeans-1.0.0-rc.1-debug.apk
-          cp android/app/build/outputs/bundle/debug/app-debug.aab release-files/bartika-jeans-1.0.0-rc.1-debug.aab
+          cp android/app/build/outputs/apk/debug/app-debug.apk release-files/bartika-jeans-${VERSION}-debug.apk
+          cp android/app/build/outputs/bundle/debug/app-debug.aab release-files/bartika-jeans-${VERSION}-debug.aab
           sha256sum release-files/* > release-files/SHA256SUMS.txt
           cat release-files/SHA256SUMS.txt
       - name: Upload APK and AAB workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: bartika-jeans-android-1.0.0-rc.1
+          name: bartika-jeans-android-${{ env.VERSION }}
           path: release-files/*
           if-no-files-found: error
           retention-days: 30
@@ -87,9 +88,9 @@ jobs:
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             gh release upload "$TAG_NAME" release-files/* --clobber
           else
-            gh release create "$TAG_NAME" release-files/bartika-jeans-1.0.0-rc.1-debug.apk release-files/bartika-jeans-1.0.0-rc.1-debug.aab release-files/SHA256SUMS.txt \
+            gh release create "$TAG_NAME" release-files/bartika-jeans-${VERSION}-debug.apk release-files/bartika-jeans-${VERSION}-debug.aab release-files/SHA256SUMS.txt \
               --target "$TARGET_SHA" \
-              --title "BARTIKA JEANS Android 1.0.0 RC1" \
+              --title "BARTIKA JEANS Android $VERSION" \
               --prerelease \
               --notes "QA build from commit $TARGET_SHA. APK and AAB are debug-signed and are for internal testing only. A dedicated private upload keystore is required for a production Google Play release. Offline support in this build is limited to the POS queue and cached catalog; other admin modules require internet."
           fi
