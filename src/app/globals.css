@@ -101,3 +101,21 @@ th { color: #5b6e63; font-size: 13px; font-weight: 700; }
     break-inside: avoid;
   }
 }
+
+/* Printable daily Z summary */
+@media print {
+  body[data-print-mode="z-report"] * { visibility: hidden !important; }
+  body[data-print-mode="z-report"] #bartika-z-print,
+  body[data-print-mode="z-report"] #bartika-z-print * { visibility: visible !important; }
+  body[data-print-mode="z-report"] #bartika-z-print {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
+    margin: 0 !important;
+    padding: 2mm !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    font-size: 12px;
+  }
+}
