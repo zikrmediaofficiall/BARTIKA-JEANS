@@ -4,16 +4,28 @@
   "description": "BARTIKA JEANS — متجر الجينز الرجالي ونظام إدارة الفرع",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000010",
-  "theme_color": "#0038C8",
+  "background_color": "#03140b",
+  "theme_color": "#12744c",
   "lang": "ar",
   "dir": "rtl",
   "icons": [
     {
-      "src": "/bartika-logo.webp",
-      "sizes": "256x256",
-      "type": "image/webp",
-      "purpose": "any maskable"
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

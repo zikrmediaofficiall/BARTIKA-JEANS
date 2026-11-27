@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { StorefrontClient } from "./storefront-client";
+import { BRAND_LOGO_URL } from "@/lib/brand";
 
 export const revalidate = 60;
 
@@ -21,10 +22,10 @@ export default async function PublicShop() {
 
   return (
     <main className="min-h-screen">
-      <header className="bg-emerald-950 px-4 py-5 text-white">
+      <header className="border-b border-gold-400/60 bg-emerald-950 px-4 py-5 text-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
           <Link href="/shop" className="flex items-center gap-3">
-            {settings?.logo_url ? <Image src={settings.logo_url} alt="BARTIKA" width={48} height={48} unoptimized className="brand-logo-frame h-14 w-14 rounded-xl object-contain p-1" /> : <span className="text-3xl">👖</span>}
+            {BRAND_LOGO_URL ? <Image src={BRAND_LOGO_URL} alt="BARTIKA" width={48} height={48} unoptimized className="brand-logo-frame h-14 w-14 rounded-xl object-contain p-1" /> : <span className="text-3xl">👖</span>}
             <span><b className="block text-xl tracking-widest">{settings?.store_name || "BARTIKA JEANS"}</b><small className="text-emerald-200">{settings?.store_name_ar || "بارتيكا جينز"}</small></span>
           </Link>
           <nav className="flex flex-wrap gap-3 text-sm text-emerald-100">
@@ -35,7 +36,7 @@ export default async function PublicShop() {
           </nav>
         </div>
       </header>
-      <section className="bg-gradient-to-l from-emerald-950 to-emerald-800 px-4 py-12 text-center text-white">
+      <section className="brand-hero px-4 py-14 text-center text-white">
         <p className="text-sm font-bold tracking-[.25em] text-gold-300">BARTIKA JEANS</p>
         <h1 className="mt-3 text-3xl font-black sm:text-5xl">ستايلك يبدأ من هنا</h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-emerald-100">اكتشف تشكيلتنا من الجينز والملابس الرجالي، واختر المقاس واللون المناسبين واطلب بسهولة.</p>

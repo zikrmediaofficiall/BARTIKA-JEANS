@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 import { PrintButton } from "./print-button";
 import { QRCodeSVG } from "qrcode.react";
+import { BRAND_LOGO_URL } from "@/lib/brand";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("ar-EG", {
@@ -80,9 +81,7 @@ export default async function InvoiceDetail({
   }
   const storeName = storeSettings?.store_name || "BARTIKA JEANS";
   const storeNameAr = storeSettings?.store_name_ar || "بارتيكا جينز";
-  const logoUrl =
-    storeSettings?.logo_url ||
-    "https://res.cloudinary.com/dcuveyab9/image/upload/v1794812757/bartika-jeans/general/bartika-brand-logo.webp";
+  const logoUrl = BRAND_LOGO_URL;
 
   return (
     <Shell user={user.email || ""} role={profile?.role || "seller"}>

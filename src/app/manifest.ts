@@ -1,7 +1,5 @@
 import type { MetadataRoute } from "next";
 
-const logo = "/bartika-logo.webp";
-
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "BARTIKA JEANS",
@@ -9,10 +7,14 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "BARTIKA JEANS — متجر الجينز الرجالي ونظام إدارة الفرع",
     start_url: "/",
     display: "standalone",
-    background_color: "#000010",
-    theme_color: "#0038C8",
+    background_color: "#03140b",
+    theme_color: "#12744c",
     lang: "ar",
     dir: "rtl",
-    icons: [{ src: logo, sizes: "256x256", type: "image/webp", purpose: "any" }],
+    icons: [
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
   };
 }

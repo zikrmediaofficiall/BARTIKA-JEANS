@@ -131,7 +131,7 @@ function createMainWindow() {
     minHeight: 560,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: "#000010",
+    backgroundColor: "#03140b",
     title: "BARTIKA JEANS",
     webPreferences: {
       nodeIntegration: false,
