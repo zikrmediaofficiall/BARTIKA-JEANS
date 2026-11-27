@@ -116,6 +116,27 @@ export default async function Settings() {
 
         <button className="btn btn-primary">حفظ إعدادات المتجر</button>
       </form>
+
+      <section className="panel mt-5 space-y-3 p-5">
+        <h3 className="font-black">نسخة احتياطية وتصدير البيانات</h3>
+        <p className="muted text-sm leading-6">
+          حمّل نسخة كاملة من بيانات المحل (منتجات، مخزون، مبيعات، عملاء، موردين، خزينة) كملف واحد، واحفظها خارج هذا الجهاز مثل فلاشة أو Google Drive. الملف يحتوي بيانات العملاء والمبيعات فلا تشاركه مع أحد.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a className="btn btn-gold text-sm" href="/api/export?format=json" download>
+            تحميل نسخة احتياطية كاملة (JSON)
+          </a>
+          <a className="btn border text-sm" href="/api/export?format=csv&table=sales" download>
+            المبيعات (Excel/CSV)
+          </a>
+          <a className="btn border text-sm" href="/api/export?format=csv&table=inventory" download>
+            المخزون (Excel/CSV)
+          </a>
+          <a className="btn border text-sm" href="/api/export?format=csv&table=customers" download>
+            العملاء (Excel/CSV)
+          </a>
+        </div>
+      </section>
     </Shell>
   );
 }
