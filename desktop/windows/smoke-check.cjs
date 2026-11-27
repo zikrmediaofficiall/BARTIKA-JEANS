@@ -29,4 +29,12 @@ assert.ok(
 assert.match(startup, /جاري تشغيل البرنامج/, "startup screen must be Arabic and local");
 assert.match(offline, /تعذر الاتصال بالمتجر/, "offline fallback must be bundled locally");
 
+assert.ok(packageJson.build.files.includes("preload.cjs"), "preload.cjs must be packaged");
+assert.ok(packageJson.build.files.includes("build/icon.ico"), "icon must be packaged");
+assert.equal(packageJson.build.win.icon, "build/icon.ico", "installer/app icon must be the brand icon");
+assert.ok(fs.existsSync(path.join(root, "build", "icon.ico")), "icon.ico must exist");
+assert.match(main, /bartika:print/, "silent print handler must exist");
+assert.match(main, /--no-silent-print/, "silent print must be switchable");
+assert.match(main, /https:\/\/bartika-jeans\.vercel\.app\//, "shop URL must be the production site");
+
 console.log("Windows desktop smoke checks passed.");

@@ -8,7 +8,8 @@ const {
   app,
   BrowserWindow,
   shell,
-  session
+  session,
+  ipcMain
 } = require("electron");
 
 const APP_URL = "https://bartika-jeans.vercel.app/";
@@ -133,7 +134,9 @@ function createMainWindow() {
     autoHideMenuBar: true,
     backgroundColor: "#03140b",
     title: "BARTIKA JEANS",
+    icon: path.join(__dirname, "build", "icon.ico"),
     webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
@@ -212,6 +215,30 @@ function createMainWindow() {
     }
   });
 }
+
+// Silent printing: window.print() in the hosted app prints straight to the Windows default printer
+// (set the thermal printer as default). Start the app with --no-silent-print to get the normal print dialog.
+const SILENT_PRINT = !process.argv.includes("--no-silent-print");
+
+ipcMain.on("bartika:print", (event) => {
+  const sender = event.sender;
+  if (!isTrustedAppUrl(sender.getURL())) {
+    writeLog("Ignored print request from an untrusted page");
+    return;
+  }
+  if (!SILENT_PRINT) {
+    sender.print({ silent: false, printBackground: true });
+    return;
+  }
+  sender.print({ silent: true, printBackground: true }, (success, reason) => {
+    if (success) {
+      writeLog("Silent print sent to the default printer");
+      return;
+    }
+    writeLog(`Silent print failed (${reason}); opening the print dialog instead`);
+    if (!sender.isDestroyed()) sender.print({ silent: false, printBackground: true });
+  });
+});
 
 app.setAppUserModelId("com.bartika.jeans.desktop");
 

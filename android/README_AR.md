@@ -28,10 +28,14 @@
 - JDK: 17
 - compileSdk / targetSdk: 36
 - Application ID: com.bartika.jeans
-- Version: 1.0.0
+- Version: من وسم الإصدار (v1.1.0 يعني versionName 1.1.0 وversionCode 10100)
 
 مخرجات GitHub Actions الحالية مخصصة للاختبار وموقّعة بمفتاح Debug:
 - APK قابل للتثبيت للاختبار.
 - AAB تشخيصي موقّع بمفتاح Debug، وليس ملف رفع إنتاجي إلى Google Play.
 
 لإصدار Google Play إنتاجي، يجب استخدام مفتاح رفع خاص ومستمر محفوظ في GitHub Actions Secrets (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD) وعدم نشره أو إرفاقه بالمستودع أو الـRelease.
+
+## الإصدارات
+- الإصدار يتم بدفع وسم بصيغة `v<major>.<minor>.<patch>` مثل `v1.1.0`. يبني `.github/workflows/release.yml` ملف APK لأندرويد وبرنامج ويندوز وينشرهما في GitHub Releases مع ملاحظات عربية من `docs/releases/<الوسم>.md`.
+- نوع البناء `sideload` يعطي apk قابل للتثبيت بمعرّف `com.bartika.jeans`، موقّع بمفتاح الاختبار. للنشر على Google Play يلزم مفتاح رفع خاص وهذا غير مفعّل.
