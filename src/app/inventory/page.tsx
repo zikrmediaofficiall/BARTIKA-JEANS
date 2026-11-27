@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePermission } from "@/lib/auth";
 import { Shell } from "@/components/shell";
 
@@ -12,7 +13,10 @@ export default async function Inventory() {
 
   return (
     <Shell user={user.email || ""} role={profile.role}>
-      <h2 className="mb-5 text-2xl font-black">المخزون والجرد</h2>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl font-black">المخزون والجرد</h2>
+        <Link href="/inventory/matrix" className="btn btn-gold text-sm">مصفوفة المقاسات والنواقص</Link>
+      </div>
       <div className="panel table-wrap p-4">
         <table>
           <thead>
